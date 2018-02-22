@@ -5,6 +5,9 @@ DQN
 PPO
 TRPO
 
+
+`I wanted to start with the easier/basic methods (as described in Reinforcement Learning: an Introduction). One issue I've run into, although I'm probably missing something, is that (at least for value-functions) full representations of the state space are required. It's not 100% clear to me how to represent that simply while taking advantage of the provided environments in openai/gym. My plan for now is to start with the above three methods, and then I'll write some specific environments and representations for the other methods.`
+
 ## Tabular Methods:
 1. Rollout
 2. Monte-Carlo Tree Search
