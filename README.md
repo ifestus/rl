@@ -1,5 +1,10 @@
 # My Reinforcement Learning Implementations
 
+## Currently focused on:
+DQN
+PPO
+TRPO
+
 ## Tabular Methods:
 1. Rollout
 2. Monte-Carlo Tree Search
@@ -22,6 +27,7 @@
 2. n-step differential semi-gradient SARSA
 
 ## Off-Policy Control with Approximation
+0. DQN (paper: https://storage.googleapis.com/deepmind-media/dqn/DQNNaturePaper.pdf)
 1. GTD(0)
 2. Semi-Gradient TD(lambda)
 
