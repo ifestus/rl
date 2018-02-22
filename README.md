@@ -4,17 +4,14 @@
 1. Rollout
 2. Monte-Carlo Tree Search
 
-## Prediction Goals:
-1. n-step TD on-policy (probably start with 1-step TD(0))
-2. n-step TD off-policy
-3. TD(lambda)
-
-## Control Goals:
+## Control Goals
 1. n-step SARSA on-policy (probably start with 1-step)
 2. n-step SARSA off-policy
 3. n-step Tree Backup
 5. Q-learning
 5. n-step Q(sigma)
+
+## TD(lambda)
 
 ## On-Policy Estimation with Approximation
 1. Gradient Monte-Carlo
