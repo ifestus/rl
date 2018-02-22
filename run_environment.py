@@ -1,12 +1,12 @@
 import gym
 
-env = gym.make('MountainCar-v0')
+env = gym.make('Pong-v0')
 print(env.observation_space)
 print(env.action_space)
 
-for i_episode in range(5):
+for i_episode in range(20):
     observation = env.reset()
-    for t in range(10):
+    for t in range(1000):
         env.render()
         print("Observation: ", observation)
         # this is where my code goes -- doing da actions man
