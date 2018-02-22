@@ -2,6 +2,7 @@
 
 ## Currently focused on:
 DQN
+REINFORCE with baseline
 PPO
 TRPO
 
