@@ -15,7 +15,7 @@ class Model(object):
         print(self.a, self.b, self.c)
 
     def run(self):
-        out = self.session.run(self.a)
+        out = self.session.run(self.c)
         print(out)
         return out
 
