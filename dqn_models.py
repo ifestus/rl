@@ -2,14 +2,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import numpy as np
 import tensorflow as tf
 
-export_dir = ('/home/merlin/rl/models')
-
-    #def __init__(self, behavior_policy='e-greedy', epsilon = 0.05, gamma=0.99,
-    #             m=4, batch_size=32, k=4, valid_actions=5, recall_frames=1000,
-    #             clip=True, C=50):
 class CNN(object):
     def __init__(self, X, Y, lr=.00025, valid_actions=6, name=None):
         self.X = X

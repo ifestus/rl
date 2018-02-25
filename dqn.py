@@ -43,7 +43,7 @@ class DQN(object):
                                 feed_dict={self._X: X, self._Y: Y})
 
     def update(self):
-        self.session.run([self._optimizer, self._lossloss],
+        self.session.run([self._optimizer, self._loss],
                          feed_dict={self._X: X, self._Y: Y})
 
     def close(self):
