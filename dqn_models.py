@@ -11,8 +11,9 @@ export_dir = ('/home/merlin/rl/models')
     #             m=4, batch_size=32, k=4, valid_actions=5, recall_frames=1000,
     #             clip=True, C=50):
 class CNN(object):
-    def __init__(self, lr=.00025, valid_actions=6):
+    def __init__(self, X, Y, lr=.00025, valid_actions=6, name=None):
         self.X = X
+        self.Y = Y
         self.learning_rate = lr
         self.valid_actions = valid_actions
 
@@ -57,16 +58,13 @@ class CNN(object):
         out = tf.layers.dense(inputs=dense1,
                               units=self.valid_actions)
 
-        self.input = input_layer
         self.out = out
         self.predict = tf.argmax(out, 1)
+
         self.Y = tf.placeholder(tf.float32, [None, valid_actions])
-        self.loss = tf.mean_squared_error(Y, self.predict)
+        self.loss = tf.mean_squared_error(self.Y, self.predict)
         self.optimizer = tf.train.RMSPropOptimizer(
                 learning_rate=self.learning_rate).minimize(self.loss)
 
-        self.initializer = tf.global_variablse_initializer()
-
-#    def init_globals(self):
-#        self.session.run(self.initializer)
+        self.initializer = tf.global_variables_initializer()
 

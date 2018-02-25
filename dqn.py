@@ -12,29 +12,39 @@ export_dir = ('/home/merlin/rl/models')
 
 class DQN(object):
     def __init__(self, name, session=tf.Session(), lr=.00025, gamma=0.99, m=4, batch_size=32, valid_actions=6, clip=True):
-        self.X = tf.paceholder([-1, 84, 84, m])
+        self._X = tf.paceholder(tf.float32, [-1, 84, 84, m])
 
         self.name = name
         self.session = session
 
-        self.gamma = gamma
-        self.learning_rate = lr
+        self._gamma = gamma
+        self._learning_rate = lr
 
-        self.m = m
-        self.batch_size = batch_size
-        self.valid_actions = valid_actions
+        self._m = m
+        self._batch_size = batch_size
+        self._valid_actions = valid_actions
 
-        self.build_model()
+        self._build_model()
 
     def _build_model(self):
-        self.model = CNN(learning_rate=self.learning_rate,
+        self.model = CNN(X=self._X,
+                         learning_rate=self.learning_rate,
                          valid_actions=self.valid_actions)
 
-    def predict(self):
-        pass
+        self._Y = self.model.Y
+        self._out = self.model.out
+        self._predict = self.model.predict
+
+        self._loss = self.model.loss
+        self._optimizer = self.model.optimizer
+
+    def predict(self, X, Y):
+        return self.session.run(self.model.predict,
+                                feed_dict={self._X: X, self._Y: Y})
 
     def update(self):
-        pass
+        self.session.run([self._optimizer, self._lossloss],
+                         feed_dict={self._X: X, self._Y: Y})
 
     def close(self):
         tf.reset_default_graph()
