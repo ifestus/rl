@@ -11,7 +11,7 @@ import tensorflow as tf
 export_dir = ('/home/merlin/rl/models')
 
 class DQN(object):
-    def __init__(self, name, session=tf.Session(), lr=.00025, gamma=0.99, m=4, batch_size=32, valid_actions=6, clip=True):
+    def __init__(self, session, name="CNN", lr=.00025, gamma=0.99, m=4, batch_size=32, valid_actions=6, clip=True):
         self._X = tf.paceholder(tf.float32, [-1, 84, 84, m])
 
         self.name = name
@@ -27,7 +27,8 @@ class DQN(object):
         self._build_model()
 
     def _build_model(self):
-        self.model = CNN(X=self._X,
+        self.model = CNN(self._X,
+                         name=name,
                          learning_rate=self.learning_rate,
                          valid_actions=self.valid_actions)
 
