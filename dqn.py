@@ -3,7 +3,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from dqn_model import CNN
+from dqn_models import CNN
 
 import numpy as np
 import tensorflow as tf
@@ -12,7 +12,7 @@ export_dir = ('/home/merlin/rl/models')
 
 class DQN(object):
     def __init__(self, session, name="CNN", lr=.00025, gamma=0.99, m=4, batch_size=32, valid_actions=6, clip=True):
-        self._X = tf.paceholder(tf.float32, [-1, 84, 84, m])
+        self._X = tf.placeholder(tf.float32, [None, 84, 84, m])
 
         self.name = name
         self.session = session
@@ -28,9 +28,10 @@ class DQN(object):
 
     def _build_model(self):
         self.model = CNN(self._X,
-                         name=name,
-                         learning_rate=self.learning_rate,
-                         valid_actions=self.valid_actions)
+                         name=self.name,
+                         lr=self._learning_rate,
+                         valid_actions=self._valid_actions)
+        self.model.build_dqn()
 
         self._Y = self.model.Y
         self._out = self.model.out
