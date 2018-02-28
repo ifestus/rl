@@ -14,15 +14,17 @@ DQN_target   = DQN(sess, name="target")
 
 for i_episode in range(20):
     observation = env.reset()
-    exit()
+    print("Observation: ", observation)
     for t in range(1000):
         # Parse observation and create input for models
 
         # Clip reward to +-0
 
+        exit()
         env.render()
-        print("Observation: ", observation)
         # Get action from the behavior network
+        # this action is going to be an e-greedy one that is determined by the
+        # behavior network
         action = env.action_space.sample()
 
         # take action
@@ -32,4 +34,7 @@ for i_episode in range(20):
         if done:
             print("Episode finished after {} timesteps.".format(t+1))
             break
+
+def prepare_obs(observation):
+    pass
 
