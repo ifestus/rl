@@ -25,6 +25,7 @@ class DQN(object):
         self._valid_actions = valid_actions
 
         self._build_model()
+        self.session.run(self.model.initializer)
 
     def _build_model(self):
         self.model = CNN(self._X,
@@ -40,9 +41,9 @@ class DQN(object):
         self._loss = self.model.loss
         self._optimizer = self.model.optimizer
 
-    def predict(self, X, Y):
+    def predict(self, X):
         return self.session.run(self.model.predict,
-                                feed_dict={self._X: X, self._Y: Y})
+                                feed_dict={self._X: X})
 
     def update(self):
         self.session.run([self._optimizer, self._loss],
