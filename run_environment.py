@@ -11,26 +11,35 @@ print(env.action_space)
 
 sess = tf.Session()
 
-exp_max_frames = 100000
+exp_max_frames = 250000
 D = []
 X_size = (84, 84, 1)
-# Number of frames our sample will take
-m = 4
+# Number of previous frames we'll take to create a sample for input to DQN
+m = 3
 
 DQN_estimate = DQN(sess, name="estimate")
 DQN_target   = DQN(sess, name="target")
 
 
 # Prefill D
+# D = [(np.zeros((84, 84, 1)), 0, 0, np.zeros((84, 84, 1)))] * exp_max_frames
 
 def sample_experience(minibatch_size=32):
     # Fill the sample with zeros to begin with
-    sample = np.zeros((minibatch, X_size[0], X_size[1], X_size[2]))
+    sample = []
+    # sample = np.zeros((minibatch_size, X_size[0], X_size[1], X_size[2]))
+
     # We want to add ${minibatch} experience values to our samples
-    for j in range(minibatch):
+    for _ in range(minibatch_size):
         # k is the index to our experience pool (D)
-        k = np.randint(exp_max_frames)
-        sample[j] = D[k]
+        k = np.maximum(np.random.randint(exp_max_frames), m)
+
+        # Pull processed frames from the previous ${m-1} experiences
+        # and add them to the sample =)
+        a = np.concatenate([D[x][0] for x in range(k-m, k+1, 1)], -1)
+        sample.append(a)
+
+    return sample
 
 
 for i_episode in range(20):
