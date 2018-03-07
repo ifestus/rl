@@ -13,6 +13,7 @@ sess = tf.Session()
 
 _TRAIN_FRAMES = 1000000
 _EXP_REPLAY_FRAMES = 100000
+_GAMMA = 0.99
 
 D = []
 X_size = (84, 84, 1)
@@ -94,7 +95,8 @@ for episode in range(1):
         # Marks the end of an episode
         if done:
             print("Episode finished after {} timesteps.".format(t+1))
-            break
+        else:
+            r = r + _GAMMA * np.maximum(DQN_target.predict())
 
 DQN_estimate.close()
 

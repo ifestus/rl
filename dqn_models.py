@@ -55,12 +55,16 @@ class CNN(object):
                                      units=self._valid_actions,
                                      activation=tf.nn.relu)
 
+            # Out size: [-1, num_actions, 1]
             self.out = dense2
+
+            # This gives us the best action, but we need to know action-values
             self.predict = tf.argmax(self.out, 1)
+            self.action_values = tf.reduce_max(self.out, -1)
 
-            self.Y = tf.placeholder(tf.float32, self.out.shape)
+            self.Y = tf.placeholder(tf.float32, self.action_values.shape)
 
-            self.loss = tf.losses.mean_squared_error(self.Y, self.out)
+            self.loss = tf.losses.mean_squared_error(self.Y, self.action_values)
 
             self.optimizer = tf.train.RMSPropOptimizer(
                     learning_rate=self._learning_rate).minimize(self.loss)
