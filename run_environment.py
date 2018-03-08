@@ -11,8 +11,8 @@ print(env.action_space)
 
 sess = tf.Session()
 
-_TRAIN_FRAMES = 1000000
-_EXP_REPLAY_FRAMES = 100000
+_TRAIN_FRAMES = 100000
+_EXP_REPLAY_FRAMES = 10000
 _GAMMA = 0.99
 
 D = []
@@ -26,7 +26,7 @@ DQN_target   = DQN(sess, name="target")
 
 
 # Prefill D
-# D = [(np.zeros((84, 84, 1)), 0, 0, np.zeros((84, 84, 1)))] * _EXP_REPLAY_FRAMES
+# D = [(np.zeros((84, 84, 1)), 0, 0, np.zeros((84, 84, 1)), 0)] * _EXP_REPLAY_FRAMES
 
 def sample_experience(minibatch_size=32):
     # Fill the sample with zeros to begin with
@@ -40,10 +40,25 @@ def sample_experience(minibatch_size=32):
 
         # Pull processed frames from the previous ${m-1} experiences
         # and add them to the sample =)
-        a = np.concatenate([D[x][0] for x in range(k-m, k+1, 1)], -1)
-        sample.append(a)
+        st = np.concatenate([D[x][0] for x in range(k-m, k+1, 1)], -1)
+        at = D[k][1]
+        rt = D[k][2]
+        st1 = np.concatenate([D[x][3] for x in range(k-m, k+1, 1)], -1)
+        done = D[k][4]
+        sample.append((st, at, rt, st1, done))
 
-    return sample
+    return np.array(sample)
+
+def gen_y(sample):
+    r = sample[:2]
+    done = sample[:4]
+
+    # Input to the target DQN is t+1 state
+    X = sample[:3]
+
+    Y = r + _GAMMA * np.multiply(done, np.amax(DQN_target.action_values(X), -1))
+
+    return Y
 
 # Really, we're training based on frames, so we should control the flow as such
 for episode in range(1):
@@ -60,7 +75,7 @@ for episode in range(1):
         obs = obs_pre
 
         # e-greedy action selection
-        _ = np.random.normal()
+        _ = np.random.sample()
         if _ > epsilon:
             action = DQN_estimate.predict(np.expand_dims(obs, 0))
         else:
@@ -78,7 +93,7 @@ for episode in range(1):
         # Update our experience pool
         # We need to have some kind of cache here so we can store the m most
         # recent experience tuples together
-        experience = (obs, action, r, obs_pre)
+        experience = (obs, action, r, obs_pre, done)
         if t >= _TRAIN_FRAMES:
             _ = D.pop()
         D.append(experience)
@@ -89,15 +104,22 @@ for episode in range(1):
         elif t == _EXP_REPLAY_FRAMES*2:
             epsilon = .1
 
-        # Sample minibatch of transitions
-        # Gradient descent
-        # Reset Q_target = Q_estimate
+        if t >= _EXP_REPLAY_FRAMES:
+            # Sample minibatch of transitions
+            sample = sample_experience()
+            X = sample[:0]
+            Y = gen_y(sample)
+
+            # Gradient descent
+            DQN_estimate.update(X, Y)
+
+            # Reset Q_target = Q_estimate
 
         # Marks the end of an episode
-        if done:
-            print("Episode finished after {} timesteps.".format(t+1))
-        else:
-            r = r + _GAMMA * np.maximum(DQN_target.predict())
+        # if done:
+        #     print("Episode finished after {} timesteps.".format(t+1))
+        # else:
+        #     r = r + _GAMMA * np.maximum(DQN_target.predict())
 
 DQN_estimate.close()
 

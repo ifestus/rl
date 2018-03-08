@@ -41,11 +41,14 @@ class DQN(object):
         self._loss = self.model.loss
         self._optimizer = self.model.optimizer
 
+    def action_values(self, X):
+        return self.session.run(self.model.out,
+                                feed_dict={self._X: X})
     def predict(self, X):
         return self.session.run(self.model.predict,
                                 feed_dict={self._X: X})
 
-    def update(self):
+    def update(self, X, Y):
         self.session.run([self._optimizer, self._loss],
                          feed_dict={self._X: X, self._Y: Y})
 

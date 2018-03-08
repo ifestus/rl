@@ -60,7 +60,7 @@ class CNN(object):
 
             # This gives us the best action, but we need to know action-values
             self.predict = tf.argmax(self.out, 1)
-            self.action_values = tf.reduce_max(self.out, -1)
+            # self.best_action = tf.reduce_max(self.out, -1)
 
             self.Y = tf.placeholder(tf.float32, self.action_values.shape)
 
