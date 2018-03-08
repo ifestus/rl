@@ -42,8 +42,9 @@ class DQN(object):
         self._optimizer = self.model.optimizer
 
     def action_values(self, X):
-        return self.session.run(self.model.out,
+        return self.session.run(self._out,
                                 feed_dict={self._X: X})
+
     def predict(self, X):
         return self.session.run(self.model.predict,
                                 feed_dict={self._X: X})

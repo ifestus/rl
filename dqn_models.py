@@ -62,9 +62,10 @@ class CNN(object):
             self.predict = tf.argmax(self.out, 1)
             # self.best_action = tf.reduce_max(self.out, -1)
 
-            self.Y = tf.placeholder(tf.float32, self.action_values.shape)
+            # self.Y = tf.placeholder(tf.float32, self.out.shape)
+            self.Y = tf.placeholder(tf.float32)
 
-            self.loss = tf.losses.mean_squared_error(self.Y, self.action_values)
+            self.loss = tf.losses.mean_squared_error(self.Y, self.out)
 
             self.optimizer = tf.train.RMSPropOptimizer(
                     learning_rate=self._learning_rate).minimize(self.loss)

@@ -11,9 +11,10 @@ print(env.action_space)
 
 sess = tf.Session()
 
-_TRAIN_FRAMES = 100000
-_EXP_REPLAY_FRAMES = 10000
+_TRAIN_FRAMES = 10000
+_EXP_REPLAY_FRAMES = 1000
 _GAMMA = 0.99
+_MINIBATCH = 32
 
 D = []
 X_size = (84, 84, 1)
@@ -28,37 +29,41 @@ DQN_target   = DQN(sess, name="target")
 # Prefill D
 # D = [(np.zeros((84, 84, 1)), 0, 0, np.zeros((84, 84, 1)), 0)] * _EXP_REPLAY_FRAMES
 
-def sample_experience(minibatch_size=32):
+def sample_experience():
     # Fill the sample with zeros to begin with
     sample = []
     # sample = np.zeros((minibatch_size, X_size[0], X_size[1], X_size[2]))
 
     # We want to add ${minibatch} experience values to our samples
-    for _ in range(minibatch_size):
+    for _ in range(_MINIBATCH):
         # k is the index to our experience pool (D)
         k = np.maximum(np.random.randint(_EXP_REPLAY_FRAMES), m)
 
         # Pull processed frames from the previous ${m-1} experiences
         # and add them to the sample =)
-        st = np.concatenate([D[x][0] for x in range(k-m, k+1, 1)], -1)
+        st = np.expand_dims(
+                np.concatenate([D[x][0] for x in range(k-m, k+1, 1)], -1),
+                0)
         at = D[k][1]
         rt = D[k][2]
-        st1 = np.concatenate([D[x][3] for x in range(k-m, k+1, 1)], -1)
+        st1 = np.expand_dims(
+                np.concatenate([D[x][3] for x in range(k-m, k+1, 1)], -1),
+                0)
         done = D[k][4]
         sample.append((st, at, rt, st1, done))
 
     return np.array(sample)
 
 def gen_y(sample):
-    r = sample[:2]
-    done = sample[:4]
+    r = sample[:, 2]
+    done = sample[:, 4]
 
     # Input to the target DQN is t+1 state
-    X = sample[:3]
+    X = np.concatenate(sample[:, 3], 0)
 
     Y = r + _GAMMA * np.multiply(done, np.amax(DQN_target.action_values(X), -1))
 
-    return Y
+    return np.reshape(Y, (_MINIBATCH, 1))
 
 # Really, we're training based on frames, so we should control the flow as such
 for episode in range(1):
@@ -77,7 +82,11 @@ for episode in range(1):
         # e-greedy action selection
         _ = np.random.sample()
         if _ > epsilon:
-            action = DQN_estimate.predict(np.expand_dims(obs, 0))
+            X = np.concatenate([D[x][0] for x in range(_EXP_REPLAY_FRAMES-m,
+                                                       _EXP_REPLAY_FRAMES, 1)],
+                               -1)
+            X = np.expand_dims(np.append(X, obs, -1), 0)
+            action = DQN_estimate.predict(X)[0]
         else:
             action = env.action_space.sample()
 
@@ -107,7 +116,7 @@ for episode in range(1):
         if t >= _EXP_REPLAY_FRAMES:
             # Sample minibatch of transitions
             sample = sample_experience()
-            X = sample[:0]
+            X = np.concatenate(sample[:, 0], 0)
             Y = gen_y(sample)
 
             # Gradient descent
@@ -116,10 +125,11 @@ for episode in range(1):
             # Reset Q_target = Q_estimate
 
         # Marks the end of an episode
-        # if done:
-        #     print("Episode finished after {} timesteps.".format(t+1))
-        # else:
-        #     r = r + _GAMMA * np.maximum(DQN_target.predict())
+        if done:
+            print("Episode finished after {} timesteps.".format(t+1))
+            obs_pre = transform.resize(env.reset(), X_size)
+            action = 0
+            reward = 0
 
 DQN_estimate.close()
 
