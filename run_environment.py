@@ -47,7 +47,7 @@ def sample_experience(minibatch_size=32):
 
 # Really, we're training based on frames, so we should control the flow as such
 for episode in range(1):
-    obs_pre = env.reset()
+    obs_pre = transform.resize(env.reset(), X_size)
     action = 0
     reward = 0
     for t in range(_TRAIN_FRAMES + 2*_EXP_REPLAY_FRAMES):
@@ -79,7 +79,8 @@ for episode in range(1):
         # We need to have some kind of cache here so we can store the m most
         # recent experience tuples together
         experience = (obs, action, r, obs_pre)
-        _ = D.pop()
+        if t >= _TRAIN_FRAMES:
+            _ = D.pop()
         D.append(experience)
 
         # Updating epsilon value after random filling of experience pool
