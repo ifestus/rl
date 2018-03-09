@@ -8,8 +8,6 @@ from dqn_models import CNN
 import numpy as np
 import tensorflow as tf
 
-export_dir = ('/home/merlin/rl/models')
-
 class DQN(object):
     def __init__(self, session, name="CNN", lr=.00025, gamma=0.99, m=4, batch_size=32, valid_actions=6, clip=True):
         self._X = tf.placeholder(tf.float32, [None, 84, 84, m])
@@ -57,9 +55,8 @@ class DQN(object):
         tf.reset_default_graph()
         self.session.close()
 
-    def save_model(self):
-        self.builder.add_meta_graph_and_variables(self.session, [self.name])
-        self.builder.save()
+    def save_model(self, checkpoint):
+        self._saver.save(self.session, checkpoint)
 
-    def load_model(self):
-        pass
+    def load_model(self, checkpoint):
+        self._saver.restore(self.session, checkpoint)

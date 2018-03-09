@@ -2,6 +2,7 @@ import gym
 from skimage import transform
 import tensorflow as tf
 import numpy as np
+import os
 
 from dqn import DQN
 
@@ -17,14 +18,19 @@ _GAMMA = 0.99
 _MINIBATCH = 32
 
 D = []
+M = 50
 X_size = (84, 84, 1)
 # Number of previous frames we'll take to create a sample for input to DQN
 m = 3
 epsilon = 1.0
 
-DQN_estimate = DQN(sess, name="estimate")
-DQN_target   = DQN(sess, name="target")
+checkpoint = '/tmp/model.ckpt'
 
+DQN_estimate = DQN(sess, name="estimate")
+DQN_estimate.save_model(checkpoint)
+
+DQN_target   = DQN(sess, name="target")
+DQN_target.load_model(checkpoint)
 
 # Prefill D
 # D = [(np.zeros((84, 84, 1)), 0, 0, np.zeros((84, 84, 1)), 0)] * _EXP_REPLAY_FRAMES
@@ -123,6 +129,9 @@ for episode in range(1):
             DQN_estimate.update(X, Y)
 
             # Reset Q_target = Q_estimate
+            if t+1 % M == 0:
+                DQN_estimate.save_model(checkpoint)
+                DQN_target.load_model(checkpoint)
 
         # Marks the end of an episode
         if done:
