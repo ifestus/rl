@@ -27,10 +27,13 @@ epsilon = 1.0
 checkpoint = '/tmp/model.ckpt'
 
 DQN_estimate = DQN(sess, name="estimate")
-DQN_estimate.save_model(checkpoint)
+#DQN_estimate.save_model(checkpoint)
 
 DQN_target   = DQN(sess, name="target")
-DQN_target.load_model(checkpoint)
+#DQN_target.load_model(checkpoint)
+
+for v in tf.get_default_graph().as_graph_def().node:
+    print(v.name)
 
 # Prefill D
 # D = [(np.zeros((84, 84, 1)), 0, 0, np.zeros((84, 84, 1)), 0)] * _EXP_REPLAY_FRAMES
