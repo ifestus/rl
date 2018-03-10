@@ -2,18 +2,23 @@ import gym
 from skimage import transform
 import tensorflow as tf
 import numpy as np
+
+import argparse
 import os
 
 from dqn import DQN
 
+parser = argparse.ArgumentParser()
+parser.add_argument("--load", help="load starting point from previous checkpoint",
+                    action="store_true")
+args = parser.parse_args()
+
 env = gym.make('Pong-v0')
-print(env.observation_space)
-print(env.action_space)
 
 sess = tf.Session()
 
-_TRAIN_FRAMES = 10000
-_EXP_REPLAY_FRAMES = 1000
+_TRAIN_FRAMES = 100000
+_EXP_REPLAY_FRAMES = 10000
 _GAMMA = 0.99
 _MINIBATCH = 32
 
@@ -27,10 +32,14 @@ epsilon = 1.0
 checkpoint = '/tmp/model.ckpt'
 
 DQN_estimate = DQN(sess, name="estimate")
-DQN_estimate.save_model(checkpoint)
-
 DQN_target   = DQN(sess, name="target")
-DQN_target.load_model(checkpoint)
+
+if args.load:
+    DQN_estimate.load_model(checkpoint)
+    DQN_target.load_model(checkpoint)
+else:
+    DQN_estimate.save_model(checkpoint)
+    DQN_target.load_model(checkpoint)
 
 # Prefill D
 # D = [(np.zeros((84, 84, 1)), 0, 0, np.zeros((84, 84, 1)), 0)] * _EXP_REPLAY_FRAMES
@@ -77,7 +86,7 @@ for episode in range(1):
     action = 0
     reward = 0
     for t in range(_TRAIN_FRAMES + 2*_EXP_REPLAY_FRAMES):
-        if t >= _EXP_REPLAY_FRAMES:
+        if t >= _EXP_REPLAY_FRAMES * 2:
             env.render()
 
         # Get action from the estimate network
