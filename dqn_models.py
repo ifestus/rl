@@ -71,9 +71,4 @@ class CNN(object):
                     learning_rate=self._learning_rate).minimize(self.loss)
 
             self.initializer = tf.global_variables_initializer()
-#            self.saver = tf.train.Saver({"conv1": conv1,
-#                                         "conv2": conv2,
-#                                         "conv3": conv3,
-#                                         "dense1": dense1,
-#                                         "dense2": dense2})
 

@@ -25,6 +25,8 @@ class DQN(object):
         self._build_model()
         self.session.run(self.model.initializer)
 
+        self._saver = tf.train.Saver(self.get_variables_dict())
+
     def _build_model(self):
         self.model = CNN(self._X,
                          name=self.name,
@@ -38,6 +40,15 @@ class DQN(object):
 
         self._loss = self.model.loss
         self._optimizer = self.model.optimizer
+
+    def get_variables_dict(self):
+        variables = {}
+        for v in tf.trainable_variables():
+            if self.name in v.name:
+                variables[v.name.replace(self.name+'/',"")] = v
+
+        # print("{} variables: \n{}".format(self.name, variables))
+        return variables
 
     def action_values(self, X):
         return self.session.run(self._out,
