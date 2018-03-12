@@ -17,8 +17,8 @@ env = gym.make('Pong-v0')
 
 sess = tf.Session()
 
-_TRAIN_FRAMES = 100000
-_EXP_REPLAY_FRAMES = 10000
+_TRAIN_FRAMES = 1000000
+_EXP_REPLAY_FRAMES = 100000
 _GAMMA = 0.99
 _MINIBATCH = 32
 
@@ -86,7 +86,7 @@ for episode in range(1):
     action = 0
     reward = 0
     for t in range(_TRAIN_FRAMES + 2*_EXP_REPLAY_FRAMES):
-        if t >= _EXP_REPLAY_FRAMES * 2:
+        if t >= _TRAIN_FRAMES - _EXP_REPLAY_FRAMES:
             env.render()
 
         # Get action from the estimate network
