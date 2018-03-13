@@ -29,7 +29,7 @@ X_size = (84, 84, 1)
 m = 3
 epsilon = 1.0
 
-checkpoint = '/tmp/model.ckpt'
+checkpoint = '/home/merlin/models/model.ckpt'
 
 DQN_estimate = DQN(sess, name="estimate")
 DQN_target   = DQN(sess, name="target")
