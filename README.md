@@ -31,7 +31,7 @@ TRPO
 2. n-step differential semi-gradient SARSA
 
 ## Off-Policy Control with Approximation
-0. DQN (paper: https://storage.googleapis.com/deepmind-media/dqn/DQNNaturePaper.pdf)
+0. DQN (paper: https://storage.googleapis.com/deepmind-media/dqn/DQNNaturePaper.pdf) -- DDQN (paper: https://arxiv.org/pdf/1509.06461.pdf)
 1. GTD(0)
 2. Semi-Gradient TD(lambda)
 
