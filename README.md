@@ -1,7 +1,7 @@
 # My Reinforcement Learning Implementations
 
 ## Currently focused on:
-DQN
+DQN (and DDQN)
 REINFORCE with baseline
 PPO
 TRPO
