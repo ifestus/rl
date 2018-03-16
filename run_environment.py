@@ -87,8 +87,8 @@ for episode in range(1):
     reward = 0
     for t in range(_TRAIN_FRAMES + 2*_EXP_REPLAY_FRAMES):
         if (t+1) % 5000 == 0:
-            tf.logging.info("Time Step: [{}]".format(t+1))
-            tf.logging.info("D length", len(D))
+            print("Time Step: [{}]".format(t+1))
+            print("D length", len(D))
         if t >= _TRAIN_FRAMES - _EXP_REPLAY_FRAMES:
             env.render()
 

@@ -8,17 +8,6 @@ from dqn_models import CNN
 import numpy as np
 import tensorflow as tf
 
-class DDQN(DQN):
-    def __init__(self, session, name="CNN", lr=.00025, gamma=0.99, m=4, batch_size=32, valid_actions=6, clip=True):
-        super().__init__(session, name, lr, gamma, m, batch_size, valid_actions, clip)
-
-    def predict(self, X):
-        return self.session.run(self.model.predict,
-                                feed_dict={self._X: X})
-
-    def update(self, X, Y):
-        self.session.run([self._optimizer, self._loss],
-                         feed_dict={self._X: X, self._Y: Y})
 
 class DQN(object):
     def __init__(self, session, name="CNN", lr=.00025, gamma=0.99, m=4, batch_size=32, valid_actions=6, clip=True):
@@ -83,3 +72,16 @@ class DQN(object):
 
     def load_model(self, checkpoint):
         self._saver.restore(self.session, checkpoint)
+
+
+class DDQN(DQN):
+    def __init__(self, session, name="CNN", lr=.00025, gamma=0.99, m=4, batch_size=32, valid_actions=6, clip=True):
+        super().__init__(session, name, lr, gamma, m, batch_size, valid_actions, clip)
+
+    def predict(self, X):
+        return self.session.run(self.model.predict,
+                                feed_dict={self._X: X})
+
+    def update(self, X, Y):
+        self.session.run([self._optimizer, self._loss],
+                         feed_dict={self._X: X, self._Y: Y})
