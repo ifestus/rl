@@ -91,6 +91,7 @@ for episode in range(1):
     reward = 0
 
     # Metrics
+    _t = 0
     reward_accum = 0.0
     values_accum = 0.0
 
@@ -161,14 +162,17 @@ for episode in range(1):
         # Marks the end of an episode
         if done:
             print("Episode finished after {} timesteps.".format(t+1))
-            _t = t
             obs_pre = transform.resize(env.reset(), X_size)
             action = 0
             reward = 0
 
             metrics.append((reward_accum/(t-_t), values_accum/(t-_t)))
+            print("avg_reward over episode: {}".format(reward_accum/(t-_t)))
+            print("avg_values over episode: {}".format(values_accum/(t-_t)))
             reward_accum = 0.0
             values_accum = 0.0
+
+            _t = t
 
 DQN_estimate.close()
 
