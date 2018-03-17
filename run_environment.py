@@ -173,6 +173,8 @@ for episode in range(1):
             values_accum = 0.0
 
             _t = t
+            with open('metrics.txt', 'w') as f:
+                f.write(metrics)
 
 DQN_estimate.close()
 
