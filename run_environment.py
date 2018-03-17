@@ -174,7 +174,7 @@ for episode in range(1):
 
             _t = t
             with open('metrics.txt', 'w') as f:
-                f.write(metrics)
+                f.write(str(metrics))
 
 DQN_estimate.close()
 
