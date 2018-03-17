@@ -161,7 +161,7 @@ for episode in range(1):
 
         # Marks the end of an episode
         if done:
-            print("Episode finished after {} timesteps.".format(t+1))
+            print("Episode finished after {} timesteps ({}).".format(t+1, t-_t))
             obs_pre = transform.resize(env.reset(), X_size)
             action = 0
             reward = 0
