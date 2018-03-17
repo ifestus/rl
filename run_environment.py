@@ -22,6 +22,10 @@ _EXP_REPLAY_FRAMES = 50000
 _GAMMA = 0.99
 _MINIBATCH = 32
 
+# Metrics will hold tuples. Currently only holds 2-tuples of average rewards
+# and action_values over an episode
+metrics = []
+
 D = []
 M = 50
 X_size = (84, 84, 1)
@@ -85,6 +89,11 @@ for episode in range(1):
     obs_pre = transform.resize(env.reset(), X_size)
     action = 0
     reward = 0
+
+    # Metrics
+    reward_accum = 0.0
+    values_accum = 0.0
+
     for t in range(_TRAIN_FRAMES + 2*_EXP_REPLAY_FRAMES):
         if (t+1) % 5000 == 0:
             print("Time Step: [{}]".format(t+1))
@@ -104,7 +113,9 @@ for episode in range(1):
                                                        _EXP_REPLAY_FRAMES, 1)],
                                -1)
             X = np.expand_dims(np.append(X, obs, -1), 0)
-            action = DQN_estimate.predict(X)[0]
+            action_values = DQN_estimate.action_values(X)
+            action = np.argmax(action_values, 1)[0]
+            values_accum += action_values[action]
         else:
             action = env.action_space.sample()
 
@@ -116,6 +127,7 @@ for episode in range(1):
 
         # Clip reward to +-0
         r = np.clip(reward, -1, 1)
+        reward_accum += r
 
         # Update our experience pool
         # We need to have some kind of cache here so we can store the m most
@@ -145,12 +157,18 @@ for episode in range(1):
                 DQN_estimate.save_model(checkpoint)
                 DQN_target.load_model(checkpoint)
 
+
         # Marks the end of an episode
         if done:
             print("Episode finished after {} timesteps.".format(t+1))
+            _t = t
             obs_pre = transform.resize(env.reset(), X_size)
             action = 0
             reward = 0
+
+            metrics.append((reward_accum/(t-_t), values_accum/(t-_t)))
+            reward_accum = 0.0
+            values_accum = 0.0
 
 DQN_estimate.close()
 

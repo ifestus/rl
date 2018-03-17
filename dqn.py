@@ -56,7 +56,7 @@ class DQN(object):
                                 feed_dict={self._X: X})
 
     def predict(self, X):
-        return self.session.run(self.model.predict,
+        return self.session.run(self._predict,
                                 feed_dict={self._X: X})
 
     def update(self, X, Y):
