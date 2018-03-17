@@ -121,13 +121,13 @@ for episode in range(1):
         # We need to have some kind of cache here so we can store the m most
         # recent experience tuples together
         experience = (obs, action, r, obs_pre, done)
-        if t >= _TRAIN_FRAMES:
+        if t >= _EXP_REPLAY_FRAMES:
             _ = D.pop()
         D.append(experience)
 
         # Updating epsilon value after random filling of experience pool
         if t >= _EXP_REPLAY_FRAMES and t < _EXP_REPLAY_FRAMES*2:
-            epsilon -= (.9)/_TRAIN_FRAMES
+            epsilon -= (.9)/_EXP_REPLAY_FRAMES
         elif t == _EXP_REPLAY_FRAMES*2:
             epsilon = .1
 
