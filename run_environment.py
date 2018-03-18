@@ -149,6 +149,8 @@ for episode in range(1):
             sample = sample_experience()
             X = np.concatenate(sample[:, 0], 0)
             Y = gen_y(sample)
+            if (t+1)%100 == 0:
+                print("Y for sampled values:", Y)
 
             # Gradient descent
             DQN_estimate.update(X, Y)

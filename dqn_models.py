@@ -68,7 +68,11 @@ class CNN(object):
             self.loss = tf.losses.mean_squared_error(self.Y, self.out)
 
             self.optimizer = tf.train.RMSPropOptimizer(
-                    learning_rate=self._learning_rate).minimize(self.loss)
+                    learning_rate=self._learning_rate).minimize(
+                            loss=self.loss,
+                            var_list=tf.get_collection(
+                                tf.GraphKeys.TRAINABLE_VARIABLES,
+                                scope=self.name))
 
             self.initializer = tf.global_variables_initializer()
 
