@@ -27,7 +27,7 @@ _MINIBATCH = 32
 metrics = []
 
 D = []
-M = 50
+C = 1000
 X_size = (84, 84, 1)
 # Number of previous frames we'll take to create a sample for input to DQN
 m = 3
@@ -50,37 +50,71 @@ else:
 
 def sample_experience():
     # Fill the sample with zeros to begin with
-    sample = []
-    # sample = np.zeros((minibatch_size, X_size[0], X_size[1], X_size[2]))
+    sample = {"st": [], "at": [], "rt+1": [], "st+1": [], "dt+1": []}
 
     # We want to add ${minibatch} experience values to our samples
     for _ in range(_MINIBATCH):
         # k is the index to our experience pool (D)
+        # we don't want to start our sample with a done frame because we're
+        # back-filling
         k = np.maximum(np.random.randint(_EXP_REPLAY_FRAMES), m)
+        # If any of the frames from k-m to k are `done` frames, just re-sample
+        if np.amax(D[k-m:k][4]) == 1:
+            k = np.maximum(np.random.randint(_EXP_REPLAY_FRAMES), m)
+        st = []
+        at = []
+        rt = []
+        done = []
 
         # Pull processed frames from the previous ${m-1} experiences
-        # and add them to the sample =)
-        st = np.expand_dims(
-                np.concatenate([D[x][0] for x in range(k-m, k+1, 1)], -1),
-                0)
-        at = D[k][1]
-        rt = D[k][2]
-        st1 = np.expand_dims(
-                np.concatenate([D[x][3] for x in range(k-m, k+1, 1)], -1),
-                0)
-        done = D[k][4]
-        sample.append((st, at, rt, st1, done))
+        # and add them to the sample =) -- m-1 experiences will be concat
+        # onto m to make an (84, 84, m+1) shape array.
+        #------------------------------
+        #st = np.expand_dims(
+        #        np.concatenate([D[x][0] for x in range(k-m, k+1, 1)], -1),
+        #        0)
+        #at = D[k][1]
+        #rt = D[k][2]
+        #st1 = np.expand_dims(
+        #        np.concatenate([D[x][3] for x in range(k-m, k+1, 1)], -1),
+        #        0)
 
-    return np.array(sample)
+        #done = D[x][4]
+
+        #sample.append((st, at, rt, st1, done))
+        #------------------------------ keeping here for reference
+
+        for x in range(k, k-m-1, -1):
+            # st and st1 will each have to be np.concatenated to create a
+            # (84, 84, m+1)-shape np array
+            st.insert(0, D[x][0])
+            st1.insert(0, D[x][3])
+
+            at.insert(0, D[x][1])
+            rt.insert(0, D[x][2])
+            dt1.insert(0, D[x][4])
+
+        sample["st"].append(np.concatenate(st, -1))
+        sample["at"].append(at)
+        sample["rt"].append(rt)
+        sample["st+1"].append(np.concatenate(st1, -1))
+        sample["dt+1"].append(dt1)
+
+    # Lets turn those pesky lists in sample into np arrays
+    for key in sample:
+        sample[key] = np.array(sample[key])
+
+    return sample
 
 def gen_y(sample):
-    r = sample[:, 2]
-    done = sample[:, 4]
+    r = sample['rt']
+    done = sample['dt+1']
 
     # Input to the target DQN is t+1 state
-    X = np.concatenate(sample[:, 3], 0)
+    X = sample['st+1']
 
-    Y = r + _GAMMA * np.multiply(done, np.amax(DQN_target.action_values(X), -1))
+    # Y = r + _GAMMA * np.multiply(done, np.amax(DQN_target.action_values(X), -1))
+    Y = r + _GAMMA * np.amax(DQN_target.action_values(X), -1)
 
     return np.reshape(Y, (_MINIBATCH, 1))
 
@@ -147,7 +181,7 @@ for episode in range(1):
         if t >= _EXP_REPLAY_FRAMES:
             # Sample minibatch of transitions
             sample = sample_experience()
-            X = np.concatenate(sample[:, 0], 0)
+            X = sample['st']
             Y = gen_y(sample)
             if (t+1)%100 == 0:
                 print("Y for sampled values:", Y)
@@ -156,7 +190,7 @@ for episode in range(1):
             DQN_estimate.update(X, Y)
 
             # Reset Q_target = Q_estimate
-            if t+1 % M == 0:
+            if t+1 % C == 0:
                 DQN_estimate.save_model(checkpoint)
                 DQN_target.load_model(checkpoint)
 
@@ -176,8 +210,8 @@ for episode in range(1):
 
             _t = t
             with open('metrics.txt', 'w') as f:
-                f.write(str(metrics))
+                f.write("{} \n".format(str(metrics)))
 
 DQN_estimate.close()
-
+DQN_target.close()
 
