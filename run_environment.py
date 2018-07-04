@@ -18,7 +18,7 @@ env = gym.make('Pong-v0')
 sess = tf.Session()
 
 _TRAIN_FRAMES = 500000
-_EXP_REPLAY_FRAMES = 50000
+_EXP_REPLAY_FRAMES = 5000 #50,000
 _GAMMA = 0.99
 _MINIBATCH = 32
 
@@ -59,12 +59,13 @@ def sample_experience():
         # back-filling
         k = np.maximum(np.random.randint(_EXP_REPLAY_FRAMES), m)
         # If any of the frames from k-m to k are `done` frames, just re-sample
-        if np.amax(D[k-m:k][4]) == 1:
+        if np.amax(D[k-m:k][1][4]) == True:
             k = np.maximum(np.random.randint(_EXP_REPLAY_FRAMES), m)
         st = []
         at = []
         rt = []
-        done = []
+        st1 = []
+        dt1 = []
 
         # Pull processed frames from the previous ${m-1} experiences
         # and add them to the sample =) -- m-1 experiences will be concat
@@ -94,11 +95,11 @@ def sample_experience():
             rt.insert(0, D[x][2])
             dt1.insert(0, D[x][4])
 
-        sample["st"].append(np.concatenate(st, -1))
-        sample["at"].append(at)
-        sample["rt"].append(rt)
-        sample["st+1"].append(np.concatenate(st1, -1))
-        sample["dt+1"].append(dt1)
+        sample['st'].append(np.concatenate(st, -1))
+        sample['at'].append(at)
+        sample['rt'].append(rt)
+        sample['st+1'].append(np.concatenate(st1, -1))
+        sample['dt+1'].append(dt1)
 
     # Lets turn those pesky lists in sample into np arrays
     for key in sample:
