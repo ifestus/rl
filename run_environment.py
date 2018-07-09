@@ -18,7 +18,7 @@ env = gym.make('Pong-v0')
 sess = tf.Session()
 
 _TRAIN_FRAMES = 500000
-_EXP_REPLAY_FRAMES = 5000 #50,000
+_EXP_REPLAY_FRAMES = 100 #50,000
 _GAMMA = 0.99
 _MINIBATCH = 32
 
@@ -58,12 +58,21 @@ def sample_experience():
         # we don't want to start our sample with a done frame because we're
         # back-filling
         k = np.maximum(np.random.randint(_EXP_REPLAY_FRAMES), m)
-        # If any of the frames from k-m to k are `done` frames, just re-sample
+
+        # If any of the frames from k-m to k-1 (inclusive) are `done` frames
         if np.amax(D[k-m:k][1][4]) == True:
-            k = np.maximum(np.random.randint(_EXP_REPLAY_FRAMES), m)
+            done_frame = np.argmax(D[k-m:k][1][4])
+            new_k = k - done_frame
+
+            # shift k such that the done frame is new k
+            if k - done_frame > m:
+                k = new_k
+            else:
+                k = np.maximum(np.random.randint(_EXP_REPLAY_FRAMES), m)
+
         st = []
         at = []
-        rt = []
+        rt1 = []
         st1 = []
         dt1 = []
 
@@ -92,12 +101,12 @@ def sample_experience():
             st1.insert(0, D[x][3])
 
             at.insert(0, D[x][1])
-            rt.insert(0, D[x][2])
+            rt1.insert(0, D[x][2])
             dt1.insert(0, D[x][4])
 
         sample['st'].append(np.concatenate(st, -1))
         sample['at'].append(at)
-        sample['rt'].append(rt)
+        sample['rt+1'].append(rt1)
         sample['st+1'].append(np.concatenate(st1, -1))
         sample['dt+1'].append(dt1)
 
@@ -108,7 +117,7 @@ def sample_experience():
     return sample
 
 def gen_y(sample):
-    r = sample['rt']
+    rt1 = sample['rt+1'][:][-1]
     done = sample['dt+1']
 
     # Input to the target DQN is t+1 state
@@ -151,7 +160,9 @@ for episode in range(1):
             X = np.expand_dims(np.append(X, obs, -1), 0)
             action_values = DQN_estimate.action_values(X)
             action = np.argmax(action_values, 1)[0]
-            values_accum += action_values[action]
+
+            # action_values is shape (1, 6)
+            values_accum += np.reshape(action_values, (6))[action]
         else:
             action = env.action_space.sample()
 
