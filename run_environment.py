@@ -18,13 +18,9 @@ env = gym.make('Pong-v0')
 sess = tf.Session()
 
 _TRAIN_FRAMES = 500000
-_EXP_REPLAY_FRAMES = 100 #50,000
+_EXP_REPLAY_FRAMES = 50000 #50,000
 _GAMMA = 0.99
 _MINIBATCH = 32
-
-# Metrics will hold tuples. Currently only holds 2-tuples of average rewards
-# and action_values over an episode
-metrics = []
 
 D = []
 C = 1000
@@ -214,15 +210,17 @@ for episode in range(1):
             action = 0
             reward = 0
 
-            metrics.append((reward_accum/(t-_t), values_accum/(t-_t)))
+            metric = "{},{}".format(reward_accum/(t-_t), values_accum/(t-_t))
             print("avg_reward over episode: {}".format(reward_accum/(t-_t)))
             print("avg_values over episode: {}".format(values_accum/(t-_t)))
             reward_accum = 0.0
             values_accum = 0.0
 
+            print("epsilon: {}".format(epsilon))
+
             _t = t
-            with open('metrics.txt', 'w') as f:
-                f.write("{} \n".format(str(metrics)))
+            with open('metrics.txt', 'a') as f:
+                f.write("{}\n".format(metric))
 
 DQN_estimate.close()
 DQN_target.close()
