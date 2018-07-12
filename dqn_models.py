@@ -48,12 +48,14 @@ class CNN(object):
             conv3_flat = tf.reshape(conv3, [-1, 7 * 7 * 64])
             dense1 = tf.layers.dense(inputs=conv3_flat,
                                      units=512,
-                                     activation=tf.nn.relu)
+                                     activation=tf.nn.relu,
+                                     name='dense1')
 
             # Output layer
             dense2 = tf.layers.dense(inputs=dense1,
                                      units=self._valid_actions,
-                                     activation=tf.nn.relu)
+                                     activation=tf.nn.relu,
+                                     name='dense2')
 
             # Out size: [-1, num_actions, 1]
             self.out = dense2

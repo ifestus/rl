@@ -31,7 +31,7 @@ epsilon = 1.0
 
 checkpoint = '/home/merlin/models/model.ckpt'
 
-DQN_estimate = DQN(sess, name="estimate")
+DQN_estimate = DQN(sess, name="estimate", saver=True)
 DQN_target   = DQN(sess, name="target")
 
 if args.load:
@@ -40,6 +40,8 @@ if args.load:
 else:
     DQN_estimate.save_model(checkpoint)
     DQN_target.load_model(checkpoint)
+
+file_writer = tf.summary.FileWriter('./tf_graph', sess.graph)
 
 # Prefill D
 # D = [(np.zeros((84, 84, 1)), 0, 0, np.zeros((84, 84, 1)), 0)] * _EXP_REPLAY_FRAMES

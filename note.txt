@@ -1,4 +1,0 @@
-* avg_values doesn't move a bit over timesteps
-
-* made some big changes to sampling and how those values are returned -> these
-  need to be tested!
