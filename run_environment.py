@@ -1,6 +1,7 @@
 import gym
 from skimage import transform
 import tensorflow as tf
+from tensorflow.python.tools import inspect_checkpoint as chkp
 import numpy as np
 
 import argparse
@@ -31,7 +32,7 @@ epsilon = 1.0
 
 checkpoint = '/home/merlin/models/model.ckpt'
 
-DQN_estimate = DQN(sess, name="estimate", saver=True)
+DQN_estimate = DQN(sess, name="estimate")
 DQN_target   = DQN(sess, name="target")
 
 if args.load:
@@ -40,6 +41,8 @@ if args.load:
 else:
     DQN_estimate.save_model(checkpoint)
     DQN_target.load_model(checkpoint)
+
+# chkp.print_tensors_in_checkpoint_file(checkpoint, tensor_name='', all_tensors=True, all_tensor_names=True)
 
 file_writer = tf.summary.FileWriter('./tf_graph', sess.graph)
 
@@ -73,24 +76,6 @@ def sample_experience():
         rt1 = []
         st1 = []
         dt1 = []
-
-        # Pull processed frames from the previous ${m-1} experiences
-        # and add them to the sample =) -- m-1 experiences will be concat
-        # onto m to make an (84, 84, m+1) shape array.
-        #------------------------------
-        #st = np.expand_dims(
-        #        np.concatenate([D[x][0] for x in range(k-m, k+1, 1)], -1),
-        #        0)
-        #at = D[k][1]
-        #rt = D[k][2]
-        #st1 = np.expand_dims(
-        #        np.concatenate([D[x][3] for x in range(k-m, k+1, 1)], -1),
-        #        0)
-
-        #done = D[x][4]
-
-        #sample.append((st, at, rt, st1, done))
-        #------------------------------ keeping here for reference
 
         for x in range(k, k-m-1, -1):
             # st and st1 will each have to be np.concatenated to create a
@@ -193,7 +178,7 @@ for episode in range(1):
             sample = sample_experience()
             X = sample['st']
             Y = gen_y(sample)
-            if (t+1)%100 == 0:
+            if (t+1)%1000 == 0:
                 print("Y for sampled values:", Y)
 
             # Gradient descent

@@ -1,0 +1,10 @@
+dense2/bias:0: <tf.Variable 'estimate/dense2/bias:0' shape=(6,) dtype=float32_ref>
+conv2/kernel:0: <tf.Variable 'estimate/conv2/kernel:0' shape=(4, 4, 32, 64) dtype=float32_ref>
+dense1/bias:0: <tf.Variable 'estimate/dense1/bias:0' shape=(512,) dtype=float32_ref>
+dense1/kernel:0: <tf.Variable 'estimate/dense1/kernel:0' shape=(3136, 512) dtype=float32_ref>
+dense2/kernel:0: <tf.Variable 'estimate/dense2/kernel:0' shape=(512, 6) dtype=float32_ref>
+conv3/kernel:0: <tf.Variable 'estimate/conv3/kernel:0' shape=(3, 3, 64, 64) dtype=float32_ref>
+input_conv/kernel:0: <tf.Variable 'estimate/input_conv/kernel:0' shape=(8, 8, 4, 32) dtype=float32_ref>
+input_conv/bias:0: <tf.Variable 'estimate/input_conv/bias:0' shape=(32,) dtype=float32_ref>
+conv2/bias:0: <tf.Variable 'estimate/conv2/bias:0' shape=(64,) dtype=float32_ref>
+conv3/bias:0: <tf.Variable 'estimate/conv3/bias:0' shape=(64,) dtype=float32_ref>
