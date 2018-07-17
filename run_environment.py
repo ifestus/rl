@@ -19,12 +19,12 @@ env = gym.make('Pong-v0')
 sess = tf.Session()
 
 _TRAIN_FRAMES = 500000
-_EXP_REPLAY_FRAMES = 50000 #50,000
+_EXP_REPLAY_FRAMES = 50000
 _GAMMA = 0.99
 _MINIBATCH = 32
 
 D = []
-C = 1000
+C = 4000
 X_size = (84, 84, 1)
 # Number of previous frames we'll take to create a sample for input to DQN
 m = 3
@@ -75,7 +75,7 @@ def sample_experience():
         at = []
         rt1 = []
         st1 = []
-        dt1 = []
+        dt1 = 0
 
         for x in range(k, k-m-1, -1):
             # st and st1 will each have to be np.concatenated to create a
@@ -85,7 +85,8 @@ def sample_experience():
 
             at.insert(0, D[x][1])
             rt1.insert(0, D[x][2])
-            dt1.insert(0, D[x][4])
+            # dt1.insert(0, D[x][4])
+            dt1 = dt1 or D[x][4]
 
         sample['st'].append(np.concatenate(st, -1))
         sample['at'].append(at)
@@ -106,8 +107,7 @@ def gen_y(sample):
     # Input to the target DQN is t+1 state
     X = sample['st+1']
 
-    # Y = r + _GAMMA * np.multiply(done, np.amax(DQN_target.action_values(X), -1))
-    Y = r + _GAMMA * np.amax(DQN_target.action_values(X), -1)
+    Y = r + _GAMMA * np.multiply(done, np.amax(DQN_target.action_values(X), -1))
 
     return np.reshape(Y, (_MINIBATCH, 1))
 
@@ -173,12 +173,12 @@ for episode in range(1):
         elif t == _EXP_REPLAY_FRAMES*2:
             epsilon = .1
 
-        if t >= _EXP_REPLAY_FRAMES:
+        if t >= _EXP_REPLAY_FRAMES and t+1 % 4 == 0:
             # Sample minibatch of transitions
             sample = sample_experience()
             X = sample['st']
             Y = gen_y(sample)
-            if (t+1)%1000 == 0:
+            if (t+1)%12000 == 0:
                 print("Y for sampled values:", Y)
 
             # Gradient descent
