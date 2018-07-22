@@ -7,69 +7,105 @@ import numpy as np
 import argparse
 
 from dqn import DQN
+from metrics import Metrics
 
-parser = argparse.ArgumentParser()
-parser.add_argument('--load', help='load starting point from previous checkpoint',
-                    action='store_true')
-args = parser.parse_args()
-
-env = gym.make('Pong-v0')
-
-sess = tf.Session()
-
+# DQN hyper-parameters
 _TRAIN_FRAMES = 500000
-_EXP_REPLAY_FRAMES = 50000
+_EXP_REPLAY_FRAMES = 1000000
 _GAMMA = 0.99
 _MINIBATCH = 32
+_D = []  # Experience Pool
+_C = 4000  # time steps between updating target model to estimate model vars
+_TRANSFORM_SIZE = (84, 84, 1)  # Transform observations into this size
+_M = 4  # Number of frames used as input to a model
+_epsilon = 1.0
 
-D = []
-C = 4000
-X_size = (84, 84, 1)
-# Number of previous frames we'll take to create a sample for input to DQN
-m = 3
-epsilon = 1.0
+# DQN Model and TF globals
+_CHECKPOINT_FILE = '/home/merlin/models/model.ckpt'
+_TF_SESS = tf.Session()
+_DQN_ESTIMATE = DQN(_TF_SESS, name='estimate')
+_DQN_TARGET = DQN(_TF_SESS, name='target')
 
-checkpoint = '/home/merlin/models/model.ckpt'
+# Metrics object
+_METRICS = Metrics()
 
-DQN_estimate = DQN(sess, name='estimate')
-DQN_target = DQN(sess, name='target')
-
-if args.load:
-    DQN_estimate.load_model(checkpoint)
-    DQN_target.load_model(checkpoint)
-else:
-    DQN_estimate.save_model(checkpoint)
-    DQN_target.load_model(checkpoint)
-
-# chkp.print_tensors_in_checkpoint_file(checkpoint, tensor_name='', all_tensors=True, all_tensor_names=True)
-
-file_writer = tf.summary.FileWriter('./tf_graph', sess.graph)
-
-# Prefill D
-# D = [(np.zeros((84, 84, 1)), 0, 0, np.zeros((84, 84, 1)), 0)] * _EXP_REPLAY_FRAMES
+# create OpenAI Gym environment
+_GYM_ENV = gym.make('Pong-v0')
 
 
-def sample_experience():
-    # Fill the sample with zeros to begin with
+def get_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--load',
+                        help='load variables from previously saved checkpoint',
+                        action='store_true')
+    args = parser.parse_args()
+    return args
+
+
+def action_from_dqn(obs):
+    # _EXP_REPLAY_FRAMES-_M+1 because we're going to grab the most recent
+    # _M-1 frames from the top of _D and append our observation to that
+    X = np.concatenate([_D[x][0] for x in range(_EXP_REPLAY_FRAMES-_M+1,
+                                                _EXP_REPLAY_FRAMES, 1)],
+                       -1)
+    X = np.expand_dims(np.append(X, obs, -1), 0)
+    action_values = _DQN_ESTIMATE.action_values(X)
+    action = np.argmax(action_values, 1)[0]
+
+    _METRICS.add_to_values_accum(np.reshape(action_values, (6))[action])
+
+    return action
+
+
+def take_step(obs, t, action):
+    next_obs, reward, done, info = _GYM_ENV.step(action)
+    if not done:
+        next_obs_transformed = transform.resize(next_obs, _TRANSFORM_SIZE)
+
+        r = np.clip(reward, -1, 1)
+        _METRICS.add_to_rewards_accum(r)
+
+        experience = (obs, action, r, next_obs_transformed, done)
+        if len(_D) >= _EXP_REPLAY_FRAMES:
+            _D.pop(0)
+        _D.append(experience)
+
+    else:
+        _t = _METRICS.get_episodic_t()
+        print('Episode finished after {} timesteps ({}).'.format(t+1,
+                                                                 t-_t))
+
+        next_obs_transformed = transform.resize(_GYM_ENV.reset(),
+                                                _TRANSFORM_SIZE)
+
+        _METRICS.write_metrics(t)
+        _METRICS.set_rewards_accum(0.0)
+        _METRICS.set_values_accum(0.0)
+        _METRICS.set_episodic_t(0)
+
+    return next_obs_transformed
+
+
+def sample_from_experience():
     sample = {'st': [], 'at': [], 'rt+1': [], 'st+1': [], 'dt+1': []}
 
-    # We want to add ${minibatch} experience values to our samples
+    # We want to add ${_MINIBATCH} experience tuples to our sample
     for _ in range(_MINIBATCH):
-        # k is the index to our experience pool (D)
-        # we don't want to start our sample with a done frame because we're
-        # back-filling
-        k = np.maximum(np.random.randint(_EXP_REPLAY_FRAMES), m)
+        # k is th eindex into our experience pool _D
+        # we don't want to start our sample with a done frame because that
+        # makes things a bit more complicated.
+        k = np.maximum(np.randint(_EXP_REPLAY_FRAMES), _M-1)
 
-        # If any of the frames from k-m to k-1 (inclusive) are `done` frames
-        if np.amax(D[k-m:k][1][4]) is True:
-            done_frame = np.argmax(D[k-m:k][1][4])
+        # If any of the frames from k-m+1 to k-1 (inclusive) are done frames
+        if np.amax(_D[k-_M+1:k][1][4]) is True:
+            done_frame = np.argmax(_D[k-_M+1:k][1][4])
             new_k = k - done_frame
 
             # shift k such that the done frame is new k
-            if k - done_frame > m:
+            if k - done_frame > _M-1:
                 k = new_k
             else:
-                k = np.maximum(np.random.randint(_EXP_REPLAY_FRAMES), m)
+                k = np.maximum(np.random.randint(_EXP_REPLAY_FRAMES), _M-1)
 
         st = []
         at = []
@@ -77,16 +113,16 @@ def sample_experience():
         st1 = []
         dt1 = 0
 
-        for x in range(k, k-m-1, -1):
+        for x in range(k, k-_M, -1):
             # st and st1 will each have to be np.concatenated to create a
-            # (84, 84, m+1)-shape np array
-            st.insert(0, D[x][0])
-            st1.insert(0, D[x][3])
+            # (84, 84, _M)-shape np array
+            st.insert(0, _D[x][0])
+            st1.insert(0, _D[x][3])
 
-            at.insert(0, D[x][1])
-            rt1.insert(0, D[x][2])
-            # dt1.insert(0, D[x][4])
-            dt1 = dt1 or D[x][4]
+            at.insert(0, _D[x][1])
+            rt1.insert(0, _D[x][2])
+
+            dt1 = dt1 or _D[x][4]
 
         sample['st'].append(np.concatenate(st, -1))
         sample['at'].append(at)
@@ -109,106 +145,67 @@ def gen_y(sample):
     X = sample['st+1']
 
     Y = rt1 + _GAMMA * np.multiply(done,
-                                   np.amax(DQN_target.action_values(X), -1))
+                                   np.amax(_DQN_TARGET.action_values(X), -1))
 
     return np.reshape(Y, (_MINIBATCH, 1))
 
 
-# Really, we're training based on frames, so we should control the flow as such
-for episode in range(100):
-    obs_pre = transform.resize(env.reset(), X_size)
-    action = 0
-    reward = 0
+def update_models_from_experience(t):
+    # Update models after we fill experience replay and only on every 4th frame
+    if t >= _EXP_REPLAY_FRAMES and t+1 % 4 == 0:
+        sample = sample_from_experience()
+        X = sample['st']
+        Y = gen_y(sample)
 
-    # Metrics
-    _t = 0
-    reward_accum = 0.0
-    values_accum = 0.0
+        if (t+1) % 12000 == 0:
+            print('Y for sampled values: ', Y)
 
-    for t in range(_TRAIN_FRAMES + 2*_EXP_REPLAY_FRAMES):
-        if (t+1) % 5000 == 0:
-            print('Time Step: [{}]'.format(t+1))
-            print('D length', len(D))
+        # Update estimate model
+        _DQN_ESTIMATE.update(X, Y)
 
-        # Get action from the estimate network
-        # this action is going to be an e-greedy one that is determined by the
-        # estimate network
-        obs = obs_pre
+        # Reset Q_TARGET = Q_ESTIMATE
+        if t+1 % _C == 0:
+            _DQN_ESTIMATE.save_model(_CHECKPOINT_FILE)
+            _DQN_TARGET.load_model(_CHECKPOINT_FILE)
 
-        # e-greedy action selection
-        _ = np.random.sample()
-        if _ > epsilon:
-            X = np.concatenate([D[x][0] for x in range(_EXP_REPLAY_FRAMES-m,
-                                                       _EXP_REPLAY_FRAMES, 1)],
-                               -1)
-            X = np.expand_dims(np.append(X, obs, -1), 0)
-            action_values = DQN_estimate.action_values(X)
-            action = np.argmax(action_values, 1)[0]
 
-            # action_values is shape (1, 6)
-            values_accum += np.reshape(action_values, (6))[action]
-        else:
-            action = env.action_space.sample()
+def main():
+    global _epsilon
+    config = get_args()
+    if config['load'] is True:
+        _DQN_ESTIMATE.load_model(_CHECKPOINT_FILE)
+        _DQN_TARGET.load_model(_CHECKPOINT_FILE)
+    else:
+        DQN.estimate.save_model(_CHECKPOINT_FILE)
+        DQN.target.load_model(_CHECKPOINT_FILE)
 
-        # take action and preprocess next state
-        next_obs, reward, done, info = env.step(action)
+    for episode in range(100):
+        obs = transform.resize(_GYM_ENV.reset(), _TRANSFORM_SIZE)
+        action = 0
 
-        # Parse observation and create input for models
-        obs_pre = transform.resize(next_obs, X_size)
+        for t in range(_TRAIN_FRAMES + 2*_EXP_REPLAY_FRAMES):
+            _ = np.random.sample()
+            if _ > _epsilon:
+                action = action_from_dqn(obs)
+            else:
+                action = _GYM_ENV.action_space.sample()
 
-        # Clip reward to +-0
-        r = np.clip(reward, -1, 1)
-        reward_accum += r
+            obs = take_step(obs, t, action)
 
-        # Update our experience pool
-        # We need to have some kind of cache here so we can store the m most
-        # recent experience tuples together
-        experience = (obs, action, r, obs_pre, done)
-        if t >= _EXP_REPLAY_FRAMES:
-            _ = D.pop()
-        D.append(experience)
+            # Update epsilon value after random filling of experience pool
+            # after frame _EXP_REPLAY_FRAMES*2, epsilon should be == .1
+            if t >= _EXP_REPLAY_FRAMES and t < _EXP_REPLAY_FRAMES*2:
+                _epsilon -= (.9)/_EXP_REPLAY_FRAMES
 
-        # Updating epsilon value after random filling of experience pool
-        if t >= _EXP_REPLAY_FRAMES and t < _EXP_REPLAY_FRAMES*2:
-            epsilon -= (.9)/_EXP_REPLAY_FRAMES
-        elif t == _EXP_REPLAY_FRAMES*2:
-            epsilon = .1
+            update_models_from_experience(t)
 
-        if t >= _EXP_REPLAY_FRAMES and t+1 % 4 == 0:
-            # Sample minibatch of transitions
-            sample = sample_experience()
-            X = sample['st']
-            Y = gen_y(sample)
-            if (t+1) % 12000 == 0:
-                print('Y for sampled values:', Y)
+            # Incriment our episodic time counter
+            _METRICS.inc_episodic_t()
 
-            # Gradient descent
-            DQN_estimate.update(X, Y)
 
-            # Reset Q_target = Q_estimate
-            if t+1 % C == 0:
-                DQN_estimate.save_model(checkpoint)
-                DQN_target.load_model(checkpoint)
+if __name__ == '__main__':
+    file_writer = tf.summary.FileWriter('./tf_graph', _TF_SESS.graph)
+    main()
 
-        # Marks the end of an episode
-        if done:
-            print('Episode finished after {} timesteps ({}).'.format(t+1,
-                                                                     t-_t))
-            obs_pre = transform.resize(env.reset(), X_size)
-            action = 0
-            reward = 0
-
-            metric = '{},{}'.format(reward_accum/(t-_t), values_accum/(t-_t))
-            print('avg_reward over episode: {}'.format(reward_accum/(t-_t)))
-            print('avg_values over episode: {}'.format(values_accum/(t-_t)))
-            reward_accum = 0.0
-            values_accum = 0.0
-
-            print('epsilon: {}'.format(epsilon))
-
-            _t = t
-            with open('metrics.txt', 'a') as f:
-                f.write('{}\n'.format(metric))
-
-DQN_estimate.close()
-DQN_target.close()
+    _DQN_ESTIMATE.close()
+    _DQN_TARGET.close()

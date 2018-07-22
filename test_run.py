@@ -45,30 +45,30 @@ def action_from_dqn(obs):
 
 def take_action(obs, action):
     next_obs, reward, done, info = env.step(action)
-    obs_pre = transform.resize(next_obs, _X_size)
+    obs_transformed = transform.resize(next_obs, _X_size)
 
     r = np.clip(reward, -1, 1)
 
-    experience = (obs, action, r, obs_pre, done)
+    experience = (obs, action, r, obs_transformed, done)
     if len(_D) >= _EXP_REPLAY_FRAMES:
-        _D.pop()
+        _D.pop(0)
     _D.append(experience)
-    return obs_pre
+    return obs_transformed
 
 
 for episode in range(1):
-    obs_pre = transform.resize(env.reset(), _X_size)
+    obs = transform.resize(env.reset(), _X_size)
     action = 0
     reward = 0
     done = 0
 
     for t in range(4):
         action = env.action_space.sample()
-        obs_pre = take_action(obs_pre, action)
+        obs = take_action(obs, action)
 
     while not done:
         env.render()
-        action = action_from_dqn(obs_pre)
-        obs_pre = take_action(obs_pre, action)
+        action = action_from_dqn(obs)
+        obs = take_action(obs, action)
 
 DQN_estimate.close()
