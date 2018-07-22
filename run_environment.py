@@ -1,17 +1,16 @@
 import gym
 from skimage import transform
 import tensorflow as tf
-from tensorflow.python.tools import inspect_checkpoint as chkp
+# from tensorflow.python.tools import inspect_checkpoint as chkp
 import numpy as np
 
 import argparse
-import os
 
 from dqn import DQN
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--load", help="load starting point from previous checkpoint",
-                    action="store_true")
+parser.add_argument('--load', help='load starting point from previous checkpoint',
+                    action='store_true')
 args = parser.parse_args()
 
 env = gym.make('Pong-v0')
@@ -32,8 +31,8 @@ epsilon = 1.0
 
 checkpoint = '/home/merlin/models/model.ckpt'
 
-DQN_estimate = DQN(sess, name="estimate")
-DQN_target   = DQN(sess, name="target")
+DQN_estimate = DQN(sess, name='estimate')
+DQN_target = DQN(sess, name='target')
 
 if args.load:
     DQN_estimate.load_model(checkpoint)
@@ -49,9 +48,10 @@ file_writer = tf.summary.FileWriter('./tf_graph', sess.graph)
 # Prefill D
 # D = [(np.zeros((84, 84, 1)), 0, 0, np.zeros((84, 84, 1)), 0)] * _EXP_REPLAY_FRAMES
 
+
 def sample_experience():
     # Fill the sample with zeros to begin with
-    sample = {"st": [], "at": [], "rt+1": [], "st+1": [], "dt+1": []}
+    sample = {'st': [], 'at': [], 'rt+1': [], 'st+1': [], 'dt+1': []}
 
     # We want to add ${minibatch} experience values to our samples
     for _ in range(_MINIBATCH):
@@ -61,7 +61,7 @@ def sample_experience():
         k = np.maximum(np.random.randint(_EXP_REPLAY_FRAMES), m)
 
         # If any of the frames from k-m to k-1 (inclusive) are `done` frames
-        if np.amax(D[k-m:k][1][4]) == True:
+        if np.amax(D[k-m:k][1][4]) is True:
             done_frame = np.argmax(D[k-m:k][1][4])
             new_k = k - done_frame
 
@@ -100,6 +100,7 @@ def sample_experience():
 
     return sample
 
+
 def gen_y(sample):
     rt1 = sample['rt+1'][:][-1]
     done = sample['dt+1']
@@ -107,12 +108,14 @@ def gen_y(sample):
     # Input to the target DQN is t+1 state
     X = sample['st+1']
 
-    Y = r + _GAMMA * np.multiply(done, np.amax(DQN_target.action_values(X), -1))
+    Y = rt1 + _GAMMA * np.multiply(done,
+                                   np.amax(DQN_target.action_values(X), -1))
 
     return np.reshape(Y, (_MINIBATCH, 1))
 
+
 # Really, we're training based on frames, so we should control the flow as such
-for episode in range(1):
+for episode in range(100):
     obs_pre = transform.resize(env.reset(), X_size)
     action = 0
     reward = 0
@@ -124,10 +127,8 @@ for episode in range(1):
 
     for t in range(_TRAIN_FRAMES + 2*_EXP_REPLAY_FRAMES):
         if (t+1) % 5000 == 0:
-            print("Time Step: [{}]".format(t+1))
-            print("D length", len(D))
-        if t >= _TRAIN_FRAMES - _EXP_REPLAY_FRAMES:
-            env.render()
+            print('Time Step: [{}]'.format(t+1))
+            print('D length', len(D))
 
         # Get action from the estimate network
         # this action is going to be an e-greedy one that is determined by the
@@ -178,8 +179,8 @@ for episode in range(1):
             sample = sample_experience()
             X = sample['st']
             Y = gen_y(sample)
-            if (t+1)%12000 == 0:
-                print("Y for sampled values:", Y)
+            if (t+1) % 12000 == 0:
+                print('Y for sampled values:', Y)
 
             # Gradient descent
             DQN_estimate.update(X, Y)
@@ -189,26 +190,25 @@ for episode in range(1):
                 DQN_estimate.save_model(checkpoint)
                 DQN_target.load_model(checkpoint)
 
-
         # Marks the end of an episode
         if done:
-            print("Episode finished after {} timesteps ({}).".format(t+1, t-_t))
+            print('Episode finished after {} timesteps ({}).'.format(t+1,
+                                                                     t-_t))
             obs_pre = transform.resize(env.reset(), X_size)
             action = 0
             reward = 0
 
-            metric = "{},{}".format(reward_accum/(t-_t), values_accum/(t-_t))
-            print("avg_reward over episode: {}".format(reward_accum/(t-_t)))
-            print("avg_values over episode: {}".format(values_accum/(t-_t)))
+            metric = '{},{}'.format(reward_accum/(t-_t), values_accum/(t-_t))
+            print('avg_reward over episode: {}'.format(reward_accum/(t-_t)))
+            print('avg_values over episode: {}'.format(values_accum/(t-_t)))
             reward_accum = 0.0
             values_accum = 0.0
 
-            print("epsilon: {}".format(epsilon))
+            print('epsilon: {}'.format(epsilon))
 
             _t = t
             with open('metrics.txt', 'a') as f:
-                f.write("{}\n".format(metric))
+                f.write('{}\n'.format(metric))
 
 DQN_estimate.close()
 DQN_target.close()
-

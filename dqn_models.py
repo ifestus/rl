@@ -20,7 +20,7 @@ class CNN(object):
             # First convolutional layer -- Input layer
             conv1 = tf.layers.conv2d(inputs=input_layer,
                                      filters=32,
-                                     strides=[4, 1],
+                                     strides=[4, 4],
                                      kernel_size=[8, 8],
                                      padding="valid", # try same, too
                                      activation=tf.nn.relu,
@@ -29,7 +29,7 @@ class CNN(object):
             # Second convolutional layer. Input is the output of the previous layer.
             conv2 = tf.layers.conv2d(inputs=conv1,
                                      filters=64,
-                                     strides=[2, 1],
+                                     strides=[2, 2],
                                      kernel_size=[4, 4],
                                      padding="valid", # try same, too
                                      activation=tf.nn.relu,
