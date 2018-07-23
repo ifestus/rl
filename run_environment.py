@@ -81,7 +81,7 @@ def take_step(obs, t, action):
         _METRICS.write_metrics(t+1)
         _METRICS.set_rewards_accum(0.0)
         _METRICS.set_values_accum(0.0)
-        _METRICS.set_episodic_t(t+1)
+        _METRICS.set_episodic_t(t)
 
     return next_obs_transformed
 
