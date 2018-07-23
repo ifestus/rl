@@ -73,15 +73,15 @@ def take_step(obs, t, action):
     else:
         _t = _METRICS.get_episodic_t()
         print('Episode finished after {} timesteps ({}).'.format(t+1,
-                                                                 t-_t))
+                                                                 t+1-_t))
 
         next_obs_transformed = transform.resize(_GYM_ENV.reset(),
                                                 _TRANSFORM_SIZE)
 
-        _METRICS.write_metrics(t)
+        _METRICS.write_metrics(t+1)
         _METRICS.set_rewards_accum(0.0)
         _METRICS.set_values_accum(0.0)
-        _METRICS.set_episodic_t(0)
+        _METRICS.set_episodic_t(t+1)
 
     return next_obs_transformed
 
@@ -172,14 +172,14 @@ def update_models_from_experience(t):
 def main():
     global _epsilon
     config = get_args()
-    if config['load'] is True:
+    if config.load:
         _DQN_ESTIMATE.load_model(_CHECKPOINT_FILE)
         _DQN_TARGET.load_model(_CHECKPOINT_FILE)
     else:
-        DQN.estimate.save_model(_CHECKPOINT_FILE)
-        DQN.target.load_model(_CHECKPOINT_FILE)
+        _DQN_ESTIMATE.save_model(_CHECKPOINT_FILE)
+        _DQN_TARGET.load_model(_CHECKPOINT_FILE)
 
-    for episode in range(100):
+    for episode in range(1000):
         obs = transform.resize(_GYM_ENV.reset(), _TRANSFORM_SIZE)
         action = 0
 
