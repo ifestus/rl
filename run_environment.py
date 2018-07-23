@@ -72,16 +72,15 @@ def take_step(obs, t, action):
 
     else:
         _t = _METRICS.get_episodic_t()
-        print('Episode finished after {} timesteps ({}).'.format(t+1,
-                                                                 t+1-_t))
+        print('Episode finished after {} timesteps ({}).'.format(t+1, _t))
 
         next_obs_transformed = transform.resize(_GYM_ENV.reset(),
                                                 _TRANSFORM_SIZE)
 
-        _METRICS.write_metrics(t+1)
+        _METRICS.write_metrics()
         _METRICS.set_rewards_accum(0.0)
         _METRICS.set_values_accum(0.0)
-        _METRICS.set_episodic_t(t)
+        _METRICS.set_episodic_t(0)
 
     return next_obs_transformed
 
@@ -182,8 +181,10 @@ def main():
     for episode in range(1000):
         obs = transform.resize(_GYM_ENV.reset(), _TRANSFORM_SIZE)
         action = 0
+        t = 0
 
-        for t in range(_TRAIN_FRAMES + 2*_EXP_REPLAY_FRAMES):
+        # for t in range(_TRAIN_FRAMES + 2*_EXP_REPLAY_FRAMES):
+        while True:
             _ = np.random.sample()
             if _ > _epsilon:
                 action = action_from_dqn(obs)
@@ -201,6 +202,7 @@ def main():
 
             # Incriment our episodic time counter
             _METRICS.inc_episodic_t()
+            t += 1
 
 
 if __name__ == '__main__':
