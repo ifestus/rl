@@ -5,14 +5,14 @@ class Metrics(object):
         self._values_accum = 0.0
         self._metrics_file = metrics_file
 
-    def write_metrics(self, t):
-        metric = self.build_string(t)
-        with open(self._metrics_file, 'a') as f:
+    def write_metrics(self):
+        metric = self.build_string()
+        with open(self._metrics_file, 'w') as f:
             f.write('{}\n'.format(metric))
 
-    def build_string(self, t):
-        return '{}, {}'.format(self._rewards_accum/(t-self._episodic_t),
-                               self._values_accum/(t-self._episodic_t))
+    def build_string(self):
+        return '{}, {}'.format(self._rewards_accum,
+                               self._values_accum)
 
     def inc_episodic_t(self):
         self._episodic_t += 1
