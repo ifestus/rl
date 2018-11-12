@@ -10,8 +10,8 @@ from dqn import DQN
 from metrics import Metrics
 
 # DQN hyper-parameters
-_TRAIN_FRAMES = 500000
-_EXP_REPLAY_FRAMES = 1000000
+_TRAIN_FRAMES = 250000
+_EXP_REPLAY_FRAMES = 125000
 _GAMMA = 0.99
 _MINIBATCH = 32
 _D = []  # Experience Pool
