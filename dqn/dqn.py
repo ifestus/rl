@@ -10,8 +10,9 @@ import tensorflow as tf
 
 
 class DQN(object):
-    def __init__(self, session, name="CNN", lr=.00025, gamma=0.99, m=4, batch_size=32, valid_actions=6, clip=True):
-        self._X = tf.placeholder(tf.float32, [None, 84, 84, m])
+    def __init__(self, session, name="CNN", lr=.00025, gamma=0.99, input_shape=[84, 84], m=4, batch_size=32, valid_actions=6, clip=True):
+        self.input_shape = [None, input_shape[0], input_shape[1], m]
+        self._X = tf.placeholder(tf.float32, self.input_shape)
 
         self.name = name
         self.session = session
@@ -27,6 +28,9 @@ class DQN(object):
         self.session.run(self.model.initializer)
 
         self._saver = tf.train.Saver(self.get_variables_dict())
+
+    def get_valid_actions(self):
+        return self._valid_actions
 
     def _build_model(self):
         self.model = CNN(self._X,
