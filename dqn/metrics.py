@@ -40,3 +40,8 @@ class Metrics(object):
 
     def set_values_accum(self, values_accum):
         self._values_accum = values_accum
+
+    def reset_to_episode_start(self):
+        self.set_rewards_accum(0.0)
+        self.set_values_accum(0.0)
+        self.set_episodic_t(0)
