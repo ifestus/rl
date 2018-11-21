@@ -1,29 +1,35 @@
 import numpy as np
 
-def action_from_dqn(obs, num_replay_frames, estimate_dqn)
-
 
 # params.obs {Object} - Observation from gym environment
 # params.experience_replay {Object} - Experience replay object
-# params.num_replay_frames {Int} - Size of replay memory
+# params.num_replay_frames {Int} - Analogous to the m value
+#   number of previous frames to include in the input to DQN
 # params.estimate_dqn {Object} - Instance of Estimate DQN
 # params.metrics {Object} - metrics object for logging
-def action_from_dqn(params):
+# returns {Object} np.array - Input object to DQN with size of
+#   (obs.shape[0], obs.shape[1], num_replay_frames+1)
+def craft_input_with_replay_memory(params):
     obs = params.obs
     experience_replay = params.experience_replay
     num_replay_frames = params.num_replay_frames
-    estimate_dqn = params.estimate_dqn
-    metics = params.metrics
-
-    valid_actions = estimate_dqn.get_valid_actions()
+    metrics = params.metrics
 
     # experience_replay_frames - num_replay_frames + 1 because we're going to grab
     # the most recent num_replay_frames+1 frames from the top of experience_replay
     # and append our observation to that
-    X = np.concatenate([experience_replay[x][0] for x in range(experience_replay_frames-num_replay_frames+1,
-                                                               experience_replay_frames, 1)],
+    X = np.concatenate([experience_replay[x][0] for x in range(len(experience_replay)-num_replay_frames+1,
+                                                               len(experience_replay), 1)],
                        -1)
-    X = np.expand_dims(np.append(X, obs, -1), 0)
+    X = expand_dims(np.append(X, obs, -1), 0)
+    return X
+
+
+# input_object {Object} - object returned from craft_input_with_replay_memory fn
+# estimate_dqn {Object} - DQN used for estimation
+# metrics {Object} - Object for writing to metrics
+def action_from_dqn(input_object, estimate_dqn, metrics):
+    valid_actions = estimate_dqn.get_valid_actions()
     action_values = estimate_dqn.action_values(X)
     action = np.argmax(action_values, 1)[0]
 
