@@ -48,7 +48,7 @@ def action_from_dqn(input_object, estimate_dqn, metrics):
 # params.gym_env {Object} - Gym environment object
 # params.experience_replay {Object} - Experience replay object
 # params.num_replay_max_size {int} - Max size of the experience replay
-# params.transform_size {int} - shape to transform observation to (i.e. [84, 84])
+# params.transform_size {int} - shape to transform observation to (i.e. [84, 84]) or False
 # params.metrics {Object} - Object for writing to metrics
 def take_step(params):
     obs = params.obs
@@ -62,7 +62,7 @@ def take_step(params):
     next_obs, reward, done, info = gym_env.step(action)
     if not done:
         # needs to be a step here that takes the max pixel value between frame n and n-1
-        next_obs_transformed = transform.resize(next_obs, transform_size)
+        next_obs_transformed = transform_size if transform_size else transform.resize(next_obs, transform_size)
 
         r = np.clip(reward, -1, 1)
         if metrics:
@@ -75,7 +75,7 @@ def take_step(params):
 
     else:
         next_obs_transformed = transform.resize(gym_env.reset(),
-                                                     transform_size)
+                                                transform_size)
 
         if metrics:
             _t = metrics.get_episodic_t()
