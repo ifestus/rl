@@ -1,4 +1,5 @@
 import numpy as np
+from skimage import transform
 
 
 # params.obs {Object} - Observation from gym environment
@@ -15,7 +16,6 @@ def craft_input_with_replay_memory(params):
     obs = params.obs
     experience_replay = params.experience_replay
     m = params.m
-    metrics = params.metrics
 
     # len(experience_replay) - m + 1 because we're going to grab
     # the most recent m+1 frames from the top of experience_replay
@@ -24,7 +24,7 @@ def craft_input_with_replay_memory(params):
     X = np.concatenate([experience_replay[x][0] for x in range(len(experience_replay)-m+1,
                                                                len(experience_replay), 1)],
                        -1)
-    X = expand_dims(np.append(X, obs, -1), 0)
+    X = np.expand_dims(np.append(X, obs, -1), 0)
     return X
 
 
@@ -33,7 +33,7 @@ def craft_input_with_replay_memory(params):
 # metrics {Object} - Object for writing to metrics
 def action_from_dqn(input_object, estimate_dqn, metrics):
     valid_actions = estimate_dqn.get_valid_actions()
-    action_values = estimate_dqn.action_values(X)
+    action_values = estimate_dqn.action_values(input_object)
     action = np.argmax(action_values, 1)[0]
 
     metrics.add_to_values_accum(
@@ -47,7 +47,7 @@ def action_from_dqn(input_object, estimate_dqn, metrics):
 # params.obs {Object} - Observation object from gym environment
 # params.gym_env {Object} - Gym environment object
 # params.experience_replay {Object} - Experience replay object
-# params.num_replay_max_size {int} - Max size of the experience replay
+# params.experience__replay_max_size {int} - Max size of the experience replay
 # params.transform_size {int} - shape to transform observation to (i.e. [84, 84]) or False
 # params.metrics {Object} - Object for writing to metrics
 def take_step(params):
@@ -58,6 +58,7 @@ def take_step(params):
     gym_env = params.gym_env
     transform_size = params.transform_size
     experience_replay = params.experience_replay
+    experience_replay_max_size = params.experience_replay_max_size
     metrics = params.metrics
 
     if not done:
@@ -124,11 +125,11 @@ def sample_from_experience(params):
             else:
                 k = np.maximum(np.random.randint(len(experience_replay), m-1))
 
-        st = [] # State at time t
-        at = [] # Action at time t
-        rt1 = [] # Reward at time t+1
-        st1 = [] # State at time t+1
-        dt1 = 0 # Done at t+1
+        st = []  # State at time t
+        at = []  # Action at time t
+        rt1 = []  # Reward at time t+1
+        st1 = []  # State at time t+1
+        dt1 = 0  # Done at t+1
 
         for x in range(k, k-m, -1):
             # st and st1 will each have to be np.concatenated to create a
@@ -166,15 +167,26 @@ def gen_y(sample, gamma, target_dqn, minibatch_size):
     X = sample['st+1']
 
     Y = rt1 + gamma * np.multiply(done,
-                                   np.amax(target_dqn.action_values(X), -1))
+                                  np.amax(target_dqn.action_values(X), -1))
 
     return np.reshape(Y, (minibatch_size, 1))
 
 
-def update_models_from_experience(t, experience_replay_max_frames, estimate_dqn, target_dqn):
+# t {int} - time step integer
+# experience_replay_max_frames {int} - max size of experience replay
+# estimate_dqn {Object} - estimate dqn
+# target_dqn {Object} - target dqn
+# checkpoint_file {string} - checkpoint file name
+# update_freq {int} - update frequency value from paper
+# minibatch_size {int} - size of minibatch
+# m {int} - Agent history length - number of frames fed into DQN model
+def update_models_from_experience(params):
+    t = params.t
+    estimate_dqn = params.estimate_dqn
+    target_dqn = params.target_dqn
     # Update models after we fill experience replay and only on every 4th frame
-    if t >= experience_replay_max_frames and t+1 % 4 == 0:
-        sample = sample_from_experience()
+    if t >= params.experience_replay_max_frames and t+1 % 4 == 0:
+        sample = sample_from_experience(params)
         X = sample['st']
         Y = gen_y(sample)
 
@@ -185,7 +197,6 @@ def update_models_from_experience(t, experience_replay_max_frames, estimate_dqn,
         estimate_dqn.update(X, Y)
 
         # Reset Q_TARGET = Q_ESTIMATE
-        if t+1 % _C == 0:
-            estimate_dqn.save_model(_CHECKPOINT_FILE)
-            target_dqn.load_model(_CHECKPOINT_FILE)
-
+        if t+1 % params.update_frequency == 0:
+            estimate_dqn.save_model(params.checkpoint_file)
+            target_dqn.load_model(params.checkpoint_file)

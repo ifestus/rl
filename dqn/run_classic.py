@@ -5,7 +5,7 @@ import tensorflow as tf
 import numpy as np
 
 from dqn import DQN
-from helpers import action_from_dqn,take_step, craft_input_with_replay_memory, sample_from_experience, gen_y, update_models_from_experience
+from helpers import action_from_dqn, take_step, craft_input_with_replay_memory, update_models_from_experience
 from metrics import Metrics
 
 # DQN hyper-parameters
@@ -20,7 +20,7 @@ _M = 4  # Agent history length - the number of frames fed into the DQN model
 _epsilon = 1.0
 
 # DQN Model and TF Globals
-# _CHECKPOINT_FILE = '/home/merlin/models/classic_dqn.ckpt'
+_CHECKPOINT_FILE = '/home/merlin/models/classic_dqn.ckpt'
 _TF_SESS = tf.Session()
 _DQN_ESTIMATE = DQN(_TF_SESS, name='estimate')
 _DQN_TARGET = DQN(_TF_SESS, name='target')
@@ -43,7 +43,7 @@ def main():
         while True:
             _ = np.random.sample()
             if _ > _epsilon and not done:
-                model_input = craft_input_from_dqns({
+                model_input = craft_input_with_replay_memory({
                     'obs': observation,
                     'experience_replay': _D,
                     'm': _M,
@@ -61,7 +61,7 @@ def main():
                 'obs': observation,
                 'gym_env': _GYM_ENV,
                 'experience_replay': _D,
-                'num_replay_max_size': _EXP_REPLAY_FRAMES,
+                'experience_replay_max_size': _EXP_REPLAY_FRAMES,
                 'transform_size': False,
                 'metrics': _METRICS
             })
@@ -72,7 +72,16 @@ def main():
                 _epsilon -= (.9)/_EXP_REPLAY_FRAMES
 
             if t >= _REPLAY_START_SIZE:
-                update_models_from_experience(t)
+                update_models_from_experience({
+                    't': t,
+                    'experience_replay_max_frames': _EXP_REPLAY_FRAMES,
+                    'estimate_dqn': _DQN_ESTIMATE,
+                    'target_dqn': _DQN_TARGET,
+                    'checkpoint_file': _CHECKPOINT_FILE,
+                    'update_freq': _C,
+                    'minibatch_size': _MINIBATCH,
+                    'm': _M
+                })
 
             # Incriment our episodic time counter
             _METRICS.inc_episodic_t()
