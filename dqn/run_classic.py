@@ -5,12 +5,7 @@ import tensorflow as tf
 import numpy as np
 
 from dqn import DQN
-from helpers import action_from_dqn,
-                    take_step,
-                    craft_input_with_replay_memory,
-                    sample_from_experience,
-                    gen_y,
-                    update_models_from_experience
+from helpers import action_from_dqn,take_step, craft_input_with_replay_memory, sample_from_experience, gen_y, update_models_from_experience
 from metrics import Metrics
 
 # DQN hyper-parameters
