@@ -13,9 +13,9 @@ from skimage import transform
 # returns {Object} np.array - Input object to DQN with size of
 #   (obs.shape[0], obs.shape[1], m+1)
 def craft_input_with_replay_memory(params):
-    obs = params.obs
-    experience_replay = params.experience_replay
-    m = params.m
+    obs = params['obs']
+    experience_replay = params['experience_replay']
+    m = params['m']
 
     # len(experience_replay) - m + 1 because we're going to grab
     # the most recent m+1 frames from the top of experience_replay
@@ -51,15 +51,15 @@ def action_from_dqn(input_object, estimate_dqn, metrics):
 # params.transform_size {int} - shape to transform observation to (i.e. [84, 84]) or False
 # params.metrics {Object} - Object for writing to metrics
 def take_step(params):
-    obs = params.obs
-    done = params.done
-    t = params.t
-    action = params.action
-    gym_env = params.gym_env
-    transform_size = params.transform_size
-    experience_replay = params.experience_replay
-    experience_replay_max_size = params.experience_replay_max_size
-    metrics = params.metrics
+    obs = params['obs']
+    done = params['done']
+    t = params['t']
+    action = params['action']
+    gym_env = params['gym_env']
+    transform_size = params['transform_size']
+    experience_replay = params['experience_replay']
+    experience_replay_max_size = params['experience_replay_max_size']
+    metrics = params['metrics']
 
     if not done:
         next_obs, reward, done, info = gym_env.step(action)
@@ -96,9 +96,9 @@ def take_step(params):
 # params.m {int} - Analogous to the m value
 #   number of previous frames to include in the input to DQN
 def sample_from_experience(params):
-    minibatch_size = params.minibatch_size
-    experience_replay = params.experience_replay
-    m = params.m
+    minibatch_size = params['minibatch_size']
+    experience_replay = params['experience_replay']
+    m = params['m']
 
     sample = {'st': [], 'at': [], 'rt+1': [], 'st+1': [], 'dt+1': []}
 
@@ -181,11 +181,12 @@ def gen_y(sample, gamma, target_dqn, minibatch_size):
 # minibatch_size {int} - size of minibatch
 # m {int} - Agent history length - number of frames fed into DQN model
 def update_models_from_experience(params):
-    t = params.t
-    estimate_dqn = params.estimate_dqn
-    target_dqn = params.target_dqn
+    t = params['t']
+    estimate_dqn = params['estimate_dqn']
+    target_dqn = params['target_dqn']
+    checkpoint_file = params['checkpoint_file']
     # Update models after we fill experience replay and only on every 4th frame
-    if t >= params.experience_replay_max_frames and t+1 % 4 == 0:
+    if t >= params['experience_replay_max_frames'] and t+1 % 4 == 0:
         sample = sample_from_experience(params)
         X = sample['st']
         Y = gen_y(sample)
@@ -197,6 +198,6 @@ def update_models_from_experience(params):
         estimate_dqn.update(X, Y)
 
         # Reset Q_TARGET = Q_ESTIMATE
-        if t+1 % params.update_frequency == 0:
-            estimate_dqn.save_model(params.checkpoint_file)
-            target_dqn.load_model(params.checkpoint_file)
+        if t+1 % params['update_frequency'] == 0:
+            estimate_dqn.save_model(checkpoint_file)
+            target_dqn.load_model(checkpoint_file)
