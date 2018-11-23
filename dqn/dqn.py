@@ -5,13 +5,12 @@ from __future__ import print_function
 
 from dqn_models import CNN
 
-import numpy as np
 import tensorflow as tf
 
 
 class DQN(object):
-    def __init__(self, session, name="CNN", lr=.00025, gamma=0.99, input_shape=[84, 84], m=4, batch_size=32, valid_actions=6, clip=True):
-        self.input_shape = [None, input_shape[0], input_shape[1], m]
+    def __init__(self, session, name='CNN', lr=.00025, gamma=0.99, input_shape=[None, 84, 84, 4], m=4, batch_size=32, valid_actions=6, clip=True):
+        self.input_shape = input_shape
         self._X = tf.placeholder(tf.float32, self.input_shape)
 
         self.name = name
@@ -50,7 +49,7 @@ class DQN(object):
         variables = {}
         for v in tf.trainable_variables():
             if self.name in v.name:
-                variables[v.name.replace(self.name+'/',"")] = v
+                variables[v.name.replace(self.name+'/', '')] = v
 
         # print("{} variables: \n{}".format(self.name, variables))
         return variables
@@ -79,7 +78,7 @@ class DQN(object):
 
 
 class DDQN(DQN):
-    def __init__(self, session, name="CNN", lr=.00025, gamma=0.99, m=4, batch_size=32, valid_actions=6, clip=True):
+    def __init__(self, session, name='CNN', lr=.00025, gamma=0.99, m=4, batch_size=32, valid_actions=6, clip=True):
         super().__init__(session, name, lr, gamma, m, batch_size, valid_actions, clip)
 
     def predict(self, X):

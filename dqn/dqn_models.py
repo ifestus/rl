@@ -5,8 +5,9 @@ from __future__ import print_function
 import tensorflow as tf
 import numpy as np
 
+
 class CNN(object):
-    def __init__(self, X, name="CNN", lr=.00025, valid_actions=6):
+    def __init__(self, X, name='CNN', lr=.00025, valid_actions=6):
         self._X = X
         self.name = name
         self._learning_rate = lr
@@ -22,27 +23,27 @@ class CNN(object):
                                      filters=32,
                                      strides=[4, 4],
                                      kernel_size=[8, 8],
-                                     padding="valid", # try same, too
+                                     padding='valid',  # try same, too
                                      activation=tf.nn.relu,
-                                     name="input_conv")
+                                     name='input_conv')
 
             # Second convolutional layer. Input is the output of the previous layer.
             conv2 = tf.layers.conv2d(inputs=conv1,
                                      filters=64,
                                      strides=[2, 2],
                                      kernel_size=[4, 4],
-                                     padding="valid", # try same, too
+                                     padding='valid',  # try same, too
                                      activation=tf.nn.relu,
-                                     name="conv2")
+                                     name='conv2')
 
             # Third convolutional layer
             conv3 = tf.layers.conv2d(inputs=conv2,
                                      filters=64,
                                      strides=np.ones([2]),
                                      kernel_size=[3, 3],
-                                     padding="valid", # try same, too
+                                     padding='valid',  # try same, too
                                      activation=tf.nn.relu,
-                                     name="conv3")
+                                     name='conv3')
 
             # Dense hidden layer with 512 rectifier units
             conv3_flat = tf.reshape(conv3, [-1, 7 * 7 * 64])
@@ -77,4 +78,3 @@ class CNN(object):
                                 scope=self.name))
 
             self.initializer = tf.global_variables_initializer()
-
