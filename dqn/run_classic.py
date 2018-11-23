@@ -47,7 +47,7 @@ def main():
         t = 0
         while True:
             _ = np.random.sample()
-            if _ > _epsilon:
+            if _ > _epsilon and not done:
                 model_input = craft_input_from_dqns({
                     'obs': observation,
                     'experience_replay': _D,
