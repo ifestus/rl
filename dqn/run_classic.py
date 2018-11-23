@@ -22,8 +22,8 @@ _epsilon = 1.0
 # DQN Model and TF Globals
 _CHECKPOINT_FILE = '/home/merlin/models/classic_dqn.ckpt'
 _TF_SESS = tf.Session()
-_DQN_ESTIMATE = DQN(_TF_SESS, name='estimate')
-_DQN_TARGET = DQN(_TF_SESS, name='target')
+_DQN_ESTIMATE = DQN(_TF_SESS, input_shape=[None, 4, _M], name='estimate')
+_DQN_TARGET = DQN(_TF_SESS, input_shape=[None, 4, _M], name='target')
 
 # Metrics object
 _METRICS = Metrics()
