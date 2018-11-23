@@ -5,7 +5,7 @@ from skimage import transform
 # params.obs {Object} - Observation from gym environment
 # params.experience_replay {Object} - Experience replay object
 #   the underestanding is that len(experience_replay) returns
-#   experience_replay_max_size (it's full)
+#   experience_replay_max_frames (it's full)
 # params.m {int} - Analogous to the m value
 #   number of previous frames to include in the input to DQN
 # params.estimate_dqn {Object} - Instance of Estimate DQN
@@ -20,7 +20,7 @@ def craft_input_with_replay_memory(params):
     # len(experience_replay) - m + 1 because we're going to grab
     # the most recent m+1 frames from the top of experience_replay
     # and append our observation to that
-    # NOTE: This function should never be called unless len(experience_replay) == experience_replay_max_size
+    # NOTE: This function should never be called unless len(experience_replay) == experience_replay_max_frames
     X = np.concatenate([experience_replay[x][0] for x in range(len(experience_replay)-m+1,
                                                                len(experience_replay), 1)],
                        -1)
@@ -45,9 +45,10 @@ def action_from_dqn(input_object, estimate_dqn, metrics):
 # params.action {int} - number of the action to take
 # params.t {int} - step number
 # params.obs {Object} - Observation object from gym environment
+# params.done {Bool} - whether or not the episode is done - returned by gym_env.step
 # params.gym_env {Object} - Gym environment object
 # params.experience_replay {Object} - Experience replay object
-# params.experience__replay_max_size {int} - Max size of the experience replay
+# params.experience__replay_max_frames {int} - Max size of the experience replay
 # params.transform_size {int} - shape to transform observation to (i.e. [84, 84]) or False
 # params.metrics {Object} - Object for writing to metrics
 def take_step(params):
@@ -58,13 +59,18 @@ def take_step(params):
     gym_env = params['gym_env']
     transform_size = params['transform_size']
     experience_replay = params['experience_replay']
-    experience_replay_max_size = params['experience_replay_max_size']
+    experience_replay_max_frames = params['experience_replay_max_frames']
     metrics = params['metrics']
 
     if not done:
         next_obs, reward, done, info = gym_env.step(action)
     else:
         next_obs, reward, done, info = gym_env.reset()
+        _t = metrics.get_episodic_t()
+        print('Episode finished after {} timesteps ({}).'.format(t+1, _t))
+
+        metrics.write_metrics()
+        metrics.reset_to_episode_start()
 
     # needs to be a step here that takes the max pixel value between frame n and n-1
     next_obs_transformed = transform.resize(next_obs, transform_size) if transform_size else next_obs
@@ -75,16 +81,9 @@ def take_step(params):
 
     # Add this observation to experience replay
     experience = (obs, action, r, next_obs_transformed, done)
-    if len(experience_replay) >= experience_replay_max_size:
+    if len(experience_replay) >= experience_replay_max_frames:
         experience_replay.pop(0)
     experience_replay.append(experience)
-
-    if metrics:
-        _t = metrics.get_episodic_t()
-        print('Episode finished after {} timesteps ({}).'.format(t+1, _t))
-
-        metrics.write_metrics()
-        metrics.reset_to_episode_start()
 
     return next_obs_transformed, r, done, info
 
@@ -92,7 +91,7 @@ def take_step(params):
 # params.minibatch_size {int} - size of the minimatch
 # params.experience_replay {Object} - experience replay object
 #   the underestanding is that len(experience_replay) returns
-#   experience_replay_max_size (it's full)
+#   experience_replay_max_frames (it's full)
 # params.m {int} - Analogous to the m value
 #   number of previous frames to include in the input to DQN
 def sample_from_experience(params):
