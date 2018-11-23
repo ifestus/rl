@@ -52,6 +52,7 @@ def action_from_dqn(input_object, estimate_dqn, metrics):
 # params.metrics {Object} - Object for writing to metrics
 def take_step(params):
     obs = params.obs
+    done = params.done
     t = params.t
     action = params.action
     gym_env = params.gym_env
@@ -59,32 +60,32 @@ def take_step(params):
     experience_replay = params.experience_replay
     metrics = params.metrics
 
-    next_obs, reward, done, info = gym_env.step(action)
     if not done:
-        # needs to be a step here that takes the max pixel value between frame n and n-1
-        next_obs_transformed = transform_size if transform_size else transform.resize(next_obs, transform_size)
-
-        r = np.clip(reward, -1, 1)
-        if metrics:
-            metrics.add_to_rewards_accum(r)
-
-        experience = (obs, action, r, next_obs_transformed, done)
-        if len(experience_replay) >= experience_replay_max_size:
-            experience_replay.pop(0)
-        experience_replay.append(experience)
-
+        next_obs, reward, done, info = gym_env.step(action)
     else:
-        next_obs_transformed = transform.resize(gym_env.reset(),
-                                                transform_size)
+        next_obs, reward, done, info = gym_env.reset()
 
-        if metrics:
-            _t = metrics.get_episodic_t()
-            print('Episode finished after {} timesteps ({}).'.format(t+1, _t))
+    # needs to be a step here that takes the max pixel value between frame n and n-1
+    next_obs_transformed = transform.resize(next_obs, transform_size) if transform_size else next_obs
 
-            metrics.write_metrics()
-            metrics.reset_to_episode_start()
+    r = np.clip(reward, -1, 1)
+    if metrics:
+        metrics.add_to_rewards_accum(r)
 
-    return next_obs_transformed
+    # Add this observation to experience replay
+    experience = (obs, action, r, next_obs_transformed, done)
+    if len(experience_replay) >= experience_replay_max_size:
+        experience_replay.pop(0)
+    experience_replay.append(experience)
+
+    if metrics:
+        _t = metrics.get_episodic_t()
+        print('Episode finished after {} timesteps ({}).'.format(t+1, _t))
+
+        metrics.write_metrics()
+        metrics.reset_to_episode_start()
+
+    return next_obs_transformed, r, done, info
 
 
 # params.minibatch_size {int} - size of the minimatch
@@ -103,26 +104,31 @@ def sample_from_experience(params):
     # We want to add ${params.minibatch_size} experience tuples to our sample
     for _ in range(minibatch_size):
         # k is th eindex into our experience_replay
-        # we don't want to start our sample with a done frame because that
-        # makes things a bit more complicated.
+        # We will be backfilling from k, so we'd like to be at least m-1 frames away from
+        # the beginning
         k = np.maximum(np.randint(len(experience_replay), m-1))
 
+        # we don't want to start our sample with a done frame because that
+        # makes things a bit more complicated.
         # If any of the frames from k-m+1 to k-1 (inclusive) are done frames
         if np.amax(experience_replay[k-m+1:k][1][4]) is True:
             done_frame = np.argmax(experience_replay[k-m+1:k][1][4])
-            new_k = k - done_frame
+            new_k = k - m + 1 + done_frame
 
-            # shift k such that the done frame is new k
-            if k - done_frame > m-1:
+            # shift k such that the done frame is new k if new_k is far enough from beginning
+            if new_k > m-1:
                 k = new_k
+
+            # Otherwise just get a new k - this might have a done frame within it, but
+            # we should only very, very rarely get here
             else:
                 k = np.maximum(np.random.randint(len(experience_replay), m-1))
 
-        st = []
-        at = []
-        rt1 = []
-        st1 = []
-        dt1 = 0
+        st = [] # State at time t
+        at = [] # Action at time t
+        rt1 = [] # Reward at time t+1
+        st1 = [] # State at time t+1
+        dt1 = 0 # Done at t+1
 
         for x in range(k, k-m, -1):
             # st and st1 will each have to be np.concatenated to create a
