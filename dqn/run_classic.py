@@ -38,13 +38,14 @@ print(_GYM_ENV.observation_space)
 
 def main():
     global _epsilon
-    for i_episode in range(20):
-        observation, reward, done, info = _GYM_ENV.reset()
+    for _ in range(20):
+        observation = _GYM_ENV.reset()
         action = 0
-        t = 0
+        done = 0
+        global_t = 0
         while True:
-            _ = np.random.sample()
-            if _ > _epsilon and not done:
+            sample = np.random.sample()
+            if sample > _epsilon and not done:
                 model_input = craft_input_with_replay_memory({
                     'obs': observation,
                     'experience_replay': _D,
@@ -59,23 +60,23 @@ def main():
             observation, reward, done, info = take_step({
                 'action': action,
                 'done': done,
-                't': t,
+                't': global_t,
                 'obs': observation,
                 'gym_env': _GYM_ENV,
                 'experience_replay': _D,
-                'experience_replay_max_size': _EXP_REPLAY_FRAMES,
+                'experience_replay_max_frames': _EXP_REPLAY_FRAMES,
                 'transform_size': False,
                 'metrics': _METRICS
             })
 
             # Update epsilon value after random filling of experience pool
             # after frame _EXP_REPLAY_FRAMES*2, epsilon should be == .1
-            if t >= _EXP_REPLAY_FRAMES and t < _EXP_REPLAY_FRAMES*2:
+            if global_t >= _EXP_REPLAY_FRAMES and global_t < _EXP_REPLAY_FRAMES*2:
                 _epsilon -= (.9)/_EXP_REPLAY_FRAMES
 
-            if t >= _REPLAY_START_SIZE:
+            if global_t >= _REPLAY_START_SIZE:
                 update_models_from_experience({
-                    't': t,
+                    't': global_t,
                     'experience_replay_max_frames': _EXP_REPLAY_FRAMES,
                     'estimate_dqn': _DQN_ESTIMATE,
                     'target_dqn': _DQN_TARGET,
@@ -87,9 +88,9 @@ def main():
 
             # Incriment our episodic time counter
             _METRICS.inc_episodic_t()
-            t += 1
+            global_t += 1
             if done:
-                print('Episode finished after {} timesteps'.format(t+1))
+                print("episode ended - global_t: {}".format(global_t))
                 break
 
 
@@ -97,8 +98,6 @@ if __name__ == '__main__':
     # file_writer = tf.summary.FileWriter('./tf_graph', _TF_SESS.graph)
     try:
         main()
-    except Exception as err:
-        print('Ran into an issue: {}'.format(err))
-        print('Attempting to clean up')
+    finally:
         _DQN_ESTIMATE.close()
         _DQN_TARGET.close()

@@ -23,7 +23,8 @@ _m = 3
 _X_size = (84, 84, 1)
 _EXP_REPLAY_FRAMES = 4
 
-checkpoint = '/home/merlin/models/model.ckpt'
+# checkpoint = '/home/merlin/models/model.ckpt'
+checkpoint = '/home/jacob/models/model.ckpt'
 
 DQN_estimate = DQN(sess, name='estimate')
 DQN_estimate.load_model(checkpoint)
