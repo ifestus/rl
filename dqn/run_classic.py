@@ -5,7 +5,7 @@ import tensorflow as tf
 import numpy as np
 
 from dqn import DQN
-from helpers import action_from_dqn, take_step, craft_input_with_replay_memory, update_models_from_experience
+from helpers import action_from_dqn, take_step, craft_input_with_replay_memory, update_models_from_experience, append_to_experience_replay
 from metrics import Metrics
 
 # DQN hyper-parameters
@@ -57,16 +57,24 @@ def main():
             else:
                 action = _GYM_ENV.action_space.sample()
 
+            prev_obs = observation
             observation, reward, done, info = take_step({
                 'action': action,
                 'done': done,
                 't': global_t,
-                'obs': observation,
                 'gym_env': _GYM_ENV,
-                'experience_replay': _D,
-                'experience_replay_max_frames': _EXP_REPLAY_FRAMES,
                 'transform_size': False,
                 'metrics': _METRICS
+            })
+
+            append_to_experience_replay({
+                'prev_obs': prev_obs,
+                'action': action,
+                'reward': reward,
+                'next_obs_transformed': observation,
+                'done': done,
+                'experience_replay': _D,
+                'experience_replay_max_frames': _EXP_REPLAY_FRAMES
             })
 
             # Update epsilon value after random filling of experience pool

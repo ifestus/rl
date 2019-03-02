@@ -52,14 +52,11 @@ def action_from_dqn(input_object, estimate_dqn, metrics):
 # params.transform_size {int} - shape to transform observation to (i.e. [84, 84]) or False
 # params.metrics {Object} - Object for writing to metrics
 def take_step(params):
-    obs = params['obs']
     done = params['done']
     t = params['t']
     action = params['action']
     gym_env = params['gym_env']
     transform_size = params['transform_size']
-    experience_replay = params['experience_replay']
-    experience_replay_max_frames = params['experience_replay_max_frames']
     metrics = params['metrics']
 
     if not done:
@@ -79,13 +76,24 @@ def take_step(params):
     if metrics:
         metrics.add_to_rewards_accum(r)
 
+    return next_obs_transformed, r, done, info
+
+def append_to_experience_replay(params):
+    prev_obs = params['prev_obs']
+    action = params['action']
+    reward = params['reward']
+    done = params['done']
+    next_obs_transformed = params['next_obs_transformed']
+    experience_replay = params['experience_replay']
+    experience_replay_max_frames = params['experience_replay_max_frames']
+
     # Add this observation to experience replay
-    experience = (obs, action, r, next_obs_transformed, done)
+    experience = (prev_obs, action, reward, next_obs_transformed, done)
     if len(experience_replay) >= experience_replay_max_frames:
         experience_replay.pop(0)
     experience_replay.append(experience)
 
-    return next_obs_transformed, r, done, info
+    return
 
 
 # params.minibatch_size {int} - size of the minimatch
@@ -181,6 +189,8 @@ def gen_y(sample, gamma, target_dqn, minibatch_size):
 # m {int} - Agent history length - number of frames fed into DQN model
 def update_models_from_experience(params):
     t = params['t']
+    gamma = params['gamma']
+    minibatch_size = params['minibatch_size']
     estimate_dqn = params['estimate_dqn']
     target_dqn = params['target_dqn']
     checkpoint_file = params['checkpoint_file']
@@ -188,7 +198,7 @@ def update_models_from_experience(params):
     if t >= params['experience_replay_max_frames'] and t+1 % 4 == 0:
         sample = sample_from_experience(params)
         X = sample['st']
-        Y = gen_y(sample)
+        Y = gen_y(sample, gamma, target_dqn, minibatch_size)
 
         if (t+1) % 12000 == 0:
             print('Y for sampled values: ', Y)
