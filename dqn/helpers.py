@@ -114,7 +114,7 @@ def sample_from_experience(params):
         # k is th eindex into our experience_replay
         # We will be backfilling from k, so we'd like to be at least m-1 frames away from
         # the beginning
-        k = np.maximum(np.randint(len(experience_replay), m-1))
+        k = np.maximum(np.random.randint(len(experience_replay)), m-1)
 
         # we don't want to start our sample with a done frame because that
         # makes things a bit more complicated.
@@ -130,7 +130,7 @@ def sample_from_experience(params):
             # Otherwise just get a new k - this might have a done frame within it, but
             # we should only very, very rarely get here
             else:
-                k = np.maximum(np.random.randint(len(experience_replay), m-1))
+                k = np.maximum(np.random.randint(len(experience_replay)), m-1)
 
         st = []  # State at time t
         at = []  # Action at time t
